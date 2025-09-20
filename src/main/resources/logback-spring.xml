@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Define the trace correlation converter -->
+    <conversionRule conversionWord="traceId" converterClass="com.traceroot.sdk.logger.TraceCorrelationConverter" />
+
+    <!-- Console appender with trace correlation -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%traceId] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- File appender with trace correlation -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/traceroot-sdk.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%traceId] %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/traceroot-sdk.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- CloudWatch appender (configured programmatically) -->
+    <appender name="CLOUDWATCH" class="com.traceroot.sdk.logger.CloudWatchAppender">
+        <!-- This will be configured programmatically when TraceRoot is initialized -->
+    </appender>
+
+    <!-- Root logger configuration -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <!-- CloudWatch appender is added programmatically when enabled -->
+    </root>
+
+    <!-- TraceRoot SDK specific logger -->
+    <logger name="com.traceroot.sdk" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <!-- Reduce OpenTelemetry noise in logs -->
+    <logger name="io.opentelemetry" level="WARN" />
+
+    <!-- Reduce AWS SDK noise in logs -->
+    <logger name="software.amazon.awssdk" level="WARN" />
+
+</configuration>
