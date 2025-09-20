@@ -1,7 +1,7 @@
-package com.traceroot.sdk.config;
+package ai.traceroot.sdk.config;
 
-import com.traceroot.sdk.types.AwsCredentials;
-import com.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.types.AwsCredentials;
+import ai.traceroot.sdk.types.LogLevel;
 
 public class TraceRootConfigImpl implements TraceRootConfig {
   private String serviceName;

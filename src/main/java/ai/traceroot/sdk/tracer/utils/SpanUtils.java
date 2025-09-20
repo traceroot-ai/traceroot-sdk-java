@@ -1,4 +1,4 @@
-package com.traceroot.sdk.tracer.utils;
+package ai.traceroot.sdk.tracer.utils;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;

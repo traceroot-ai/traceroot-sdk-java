@@ -1,4 +1,4 @@
-package com.traceroot.sdk.tracer;
+package ai.traceroot.sdk.tracer;
 
 import java.util.Arrays;
 import java.util.List;

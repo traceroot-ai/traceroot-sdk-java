@@ -1,7 +1,7 @@
-package com.traceroot.sdk.tracer.aspects;
+package ai.traceroot.sdk.tracer.aspects;
 
-import com.traceroot.sdk.TraceRootSDK;
-import com.traceroot.sdk.tracer.annotations.Trace;
+import ai.traceroot.sdk.TraceRootSDK;
+import ai.traceroot.sdk.tracer.annotations.Trace;
 import java.lang.reflect.Method;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

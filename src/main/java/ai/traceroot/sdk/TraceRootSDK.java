@@ -1,10 +1,10 @@
-package com.traceroot.sdk;
+package ai.traceroot.sdk;
 
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.logger.TraceRootLogger;
-import com.traceroot.sdk.tracer.TraceOptions;
-import com.traceroot.sdk.tracer.TraceRootTracer;
-import com.traceroot.sdk.tracer.utils.SpanUtils;
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.TraceRootLogger;
+import ai.traceroot.sdk.tracer.TraceOptions;
+import ai.traceroot.sdk.tracer.TraceRootTracer;
+import ai.traceroot.sdk.tracer.utils.SpanUtils;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;

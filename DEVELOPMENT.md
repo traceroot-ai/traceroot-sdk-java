@@ -15,6 +15,8 @@ In the root directory, run:
 
 ```bash
 mvn clean install
+# or
+mvn clean install -Dgpg.skip=true
 ```
 
 ## Running Examples

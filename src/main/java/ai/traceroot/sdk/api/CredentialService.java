@@ -1,12 +1,12 @@
-package com.traceroot.sdk.api;
+package ai.traceroot.sdk.api;
 
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.constants.TraceRootConstants;
+import ai.traceroot.sdk.types.AwsCredentials;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.constants.TraceRootConstants;
-import com.traceroot.sdk.types.AwsCredentials;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

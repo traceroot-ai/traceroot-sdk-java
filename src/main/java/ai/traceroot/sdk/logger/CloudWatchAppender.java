@@ -1,11 +1,11 @@
-package com.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger;
 
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.types.AwsCredentials;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.types.AwsCredentials;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import java.time.Instant;

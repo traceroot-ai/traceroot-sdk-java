@@ -33,9 +33,9 @@
     <dependencies>
         <!-- TraceRoot SDK -->
         <dependency>
-            <groupId>com.traceroot</groupId>
+            <groupId>ai.traceroot</groupId>
             <artifactId>traceroot-sdk-java</artifactId>
-            <version>1.0.0</version>
+            <version>0.0.1-alpha.1</version>
         </dependency>
 
         <!-- Spring Boot -->

@@ -1,4 +1,4 @@
-package com.traceroot.sdk.constants;
+package ai.traceroot.sdk.constants;
 
 public final class TraceRootConstants {
 
