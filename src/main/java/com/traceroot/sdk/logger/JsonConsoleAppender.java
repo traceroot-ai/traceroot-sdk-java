@@ -19,18 +19,47 @@ public class JsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
       new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
   @Override
+  public void start() {
+    // ConsoleAppender requires an encoder to be set, but we override append() so we'll create a
+    // simple one
+    if (getEncoder() == null) {
+      ch.qos.logback.classic.encoder.PatternLayoutEncoder encoder =
+          new ch.qos.logback.classic.encoder.PatternLayoutEncoder();
+      encoder.setContext(getContext());
+      encoder.setPattern("%msg%n"); // Simple pattern since we override append()
+      encoder.start();
+      setEncoder(encoder);
+    }
+
+    super.start();
+  }
+
+  @Override
   protected void append(ILoggingEvent event) {
     try {
-      // Create log data in the expected JSON format
-      Map<String, Object> logData = createLogData(event);
-      String jsonMessage = objectMapper.writeValueAsString(logData);
+      // For console, use standard logback formatting
+      // Format: timestamp [thread] LEVEL logger - message
+      String timestamp =
+          java.time.Instant.ofEpochMilli(event.getTimeStamp())
+              .atZone(java.time.ZoneId.systemDefault())
+              .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+
+      String formattedMessage =
+          String.format(
+              "%s [%s] %-5s %s - %s",
+              timestamp,
+              event.getThreadName(),
+              event.getLevel(),
+              event.getLoggerName(),
+              event.getFormattedMessage());
 
       // Write directly to the output stream
-      byte[] bytes = (jsonMessage + System.lineSeparator()).getBytes();
+      byte[] bytes = (formattedMessage + System.lineSeparator()).getBytes();
       getOutputStream().write(bytes);
       getOutputStream().flush();
     } catch (Exception e) {
-      addError("Failed to append JSON log event", e);
+      addError("Failed to append log event", e);
+      e.printStackTrace();
     }
   }
 
@@ -99,16 +128,127 @@ public class JsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
   private String getCallerStackTrace(ILoggingEvent event) {
     StackTraceElement[] callerData = event.getCallerData();
     if (callerData != null && callerData.length > 0) {
-      StackTraceElement caller = callerData[0];
-      String methodName = caller.getMethodName();
-      int lineNumber = caller.getLineNumber();
+      // Find the actual calling code, skipping logger framework frames
+      StackTraceElement caller = findActualCaller(callerData);
+      if (caller != null) {
+        String methodName = caller.getMethodName();
+        int lineNumber = caller.getLineNumber();
+        String fileName = caller.getFileName();
 
-      // Format similar to TypeScript example: "examples/simple-example.ts:makeRequest:9"
-      String className = caller.getClassName();
-      String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-      return String.format("%s:%s:%d", simpleClassName + ".java", methodName, lineNumber);
+        // Clean up AspectJ synthetic method names (remove _aroundBodyN suffixes)
+        if (methodName.contains("_aroundBody")) {
+          methodName = methodName.replaceAll("_aroundBody\\d*", "");
+        }
+
+        // Get the file path - try to construct absolute path or use class-based path
+        String filePath = getFilePath(caller);
+
+        // Apply root path transformation if configured
+        if (config != null
+            && config.getRootPath() != null
+            && filePath.startsWith(config.getRootPath())) {
+          filePath = filePath.substring(config.getRootPath().length());
+          // Remove leading slash if present
+          if (filePath.startsWith("/")) {
+            filePath = filePath.substring(1);
+          }
+        }
+
+        return String.format("%s:%s:%d", filePath, methodName, lineNumber);
+      }
     }
     return "Unknown:unknown:0";
+  }
+
+  private StackTraceElement findActualCaller(StackTraceElement[] callerData) {
+    // Skip logger framework classes to find the actual calling code
+    for (StackTraceElement element : callerData) {
+      String className = element.getClassName();
+
+      // Skip TraceRootLogger, LoggerFactory, and other logging framework classes
+      if (!className.contains("TraceRootLogger")
+          && !className.contains("LoggerFactory")
+          && !className.contains("Logger")
+          && !className.startsWith("org.slf4j")
+          && !className.startsWith("ch.qos.logback")
+          && !className.startsWith("java.util.concurrent")
+          && !className.startsWith("java.lang.Thread")) {
+        return element;
+      }
+    }
+    // Fallback to the first element if we can't find a better one
+    return callerData.length > 0 ? callerData[0] : null;
+  }
+
+  private String getFilePath(StackTraceElement caller) {
+    String className = caller.getClassName();
+    String fileName = caller.getFileName();
+
+    if (fileName == null) {
+      // Fallback to constructed filename from class name
+      String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
+      fileName = simpleClassName + ".java";
+    }
+
+    // Try to find the actual source file path
+    String actualFilePath = findActualSourceFile(className, fileName);
+
+    // If we have a root path and found the actual file, remove the root path
+    if (config != null && config.getRootPath() != null && actualFilePath != null) {
+      if (actualFilePath.startsWith(config.getRootPath())) {
+        String relativePath = actualFilePath.substring(config.getRootPath().length());
+        if (relativePath.startsWith("/")) {
+          relativePath = relativePath.substring(1);
+        }
+        return relativePath;
+      }
+    }
+
+    // Fallback to package-based path if actual file not found
+    String packagePath = className.replace('.', '/');
+    int lastSlash = packagePath.lastIndexOf('/');
+    if (lastSlash >= 0) {
+      packagePath = packagePath.substring(0, lastSlash + 1) + fileName;
+    } else {
+      packagePath = fileName;
+    }
+
+    return packagePath;
+  }
+
+  private String findActualSourceFile(String className, String fileName) {
+    try {
+      // Try to get the actual source file location from the class
+      Class<?> clazz = Class.forName(className);
+      java.security.CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
+      if (codeSource != null) {
+        java.net.URL location = codeSource.getLocation();
+        if (location != null) {
+          String classPath = location.getPath();
+
+          // If it's a .class file in target/classes, try to find corresponding source
+          if (classPath.contains("/target/classes")) {
+            String sourcePath = classPath.replace("/target/classes", "/src/main/java");
+            String packagePath = className.replace('.', '/');
+            int lastSlash = packagePath.lastIndexOf('/');
+            if (lastSlash >= 0) {
+              packagePath = packagePath.substring(0, lastSlash + 1) + fileName;
+            } else {
+              packagePath = fileName;
+            }
+            String fullSourcePath = sourcePath + "/" + packagePath;
+
+            java.io.File sourceFile = new java.io.File(fullSourcePath);
+            if (sourceFile.exists()) {
+              return sourceFile.getAbsolutePath();
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      // Ignore errors, fallback to package path
+    }
+    return null;
   }
 
   public void setConfig(TraceRootConfigImpl config) {

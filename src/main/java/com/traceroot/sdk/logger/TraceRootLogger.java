@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import com.traceroot.sdk.config.TraceRootConfigImpl;
 import com.traceroot.sdk.types.LogLevel;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
@@ -16,8 +17,10 @@ import org.slf4j.MDC;
  */
 public class TraceRootLogger {
 
+  private static final Map<String, TraceRootLogger> loggerInstances = new ConcurrentHashMap<>();
+
   private final Logger logger;
-  private final TraceRootConfigImpl config;
+  private TraceRootConfigImpl config;
 
   private TraceRootLogger(Logger logger, TraceRootConfigImpl config) {
     this.logger = logger;
@@ -31,20 +34,21 @@ public class TraceRootLogger {
 
   /** Get a TraceRoot logger for the specified name */
   public static TraceRootLogger getLogger(String name) {
-    Logger slf4jLogger = (Logger) LoggerFactory.getLogger(name);
+    return loggerInstances.computeIfAbsent(
+        name,
+        loggerName -> {
+          Logger slf4jLogger = (Logger) LoggerFactory.getLogger(loggerName);
 
-    // Try to get config from logger context
-    LoggerContext context = slf4jLogger.getLoggerContext();
-    TraceRootConfigImpl config = (TraceRootConfigImpl) context.getObject("traceRootConfig");
+          // Try to get config from logger context
+          LoggerContext context = slf4jLogger.getLoggerContext();
+          TraceRootConfigImpl config = (TraceRootConfigImpl) context.getObject("traceRootConfig");
 
-    return new TraceRootLogger(slf4jLogger, config);
+          return new TraceRootLogger(slf4jLogger, config);
+        });
   }
 
   /** Initialize TraceRoot logging with configuration */
   public static void initialize(TraceRootConfigImpl config) {
-    if (config.isTracerVerbose()) {
-      System.out.println("[TraceRoot] TraceRootLogger.initialize() called");
-    }
     LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
     context.putObject("traceRootConfig", config);
 
@@ -58,37 +62,13 @@ public class TraceRootLogger {
     httpClientLogger.setLevel(ch.qos.logback.classic.Level.WARN);
 
     // Configure JSON console appender if console logging is enabled
-    if (config.isTracerVerbose()) {
-      System.out.println(
-          "[TraceRoot] Console export enabled: " + config.isEnableLogConsoleExport());
-    }
     if (config.isEnableLogConsoleExport()) {
-      if (config.isTracerVerbose()) {
-        System.out.println("[TraceRoot] Setting up JSON console appender");
-      }
       setupJsonConsoleAppender(context, config);
-    } else {
-      if (config.isTracerVerbose()) {
-        System.out.println("[TraceRoot] JSON console appender not setup - console export disabled");
-      }
     }
 
     // Configure CloudWatch appender if cloud logging is enabled
     if (config.isEnableLogCloudExport() && config.getAwsCredentials() != null) {
-      if (config.isTracerVerbose()) {
-        System.out.println(
-            "[TraceRoot] Setting up CloudWatch appender - cloud export enabled and credentials"
-                + " available");
-      }
       setupCloudWatchAppender(context, config);
-    } else {
-      if (config.isTracerVerbose()) {
-        System.out.println(
-            "[TraceRoot] CloudWatch appender not setup - cloud export enabled: "
-                + config.isEnableLogCloudExport()
-                + ", credentials available: "
-                + (config.getAwsCredentials() != null));
-      }
     }
   }
 
@@ -100,15 +80,32 @@ public class TraceRootLogger {
       jsonConsoleAppender.setConfig(config);
       jsonConsoleAppender.setName("JsonConsoleAppender");
 
+      // Set the target to System.out (required for ConsoleAppender to start)
+      jsonConsoleAppender.setTarget("System.out");
+
       jsonConsoleAppender.start();
 
       // Remove existing console appender and add JSON console appender
       Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
-      rootLogger.detachAppender("CONSOLE");
+
+      // Remove all existing appenders
+      rootLogger.detachAndStopAllAppenders();
+
       rootLogger.addAppender(jsonConsoleAppender);
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
+      e.printStackTrace();
+    }
+
+    // Update all existing logger instances with the new config
+    updateAllLoggerConfigs(config);
+  }
+
+  /** Update all existing TraceRootLogger instances with the new config */
+  private static void updateAllLoggerConfigs(TraceRootConfigImpl config) {
+    for (TraceRootLogger logger : loggerInstances.values()) {
+      logger.config = config;
     }
   }
 
@@ -150,9 +147,6 @@ public class TraceRootLogger {
       // Stop all appenders
       context.stop();
 
-      if (config != null && config.isTracerVerbose()) {
-        System.out.println("[TraceRoot] Logger shutdown completed");
-      }
     } catch (Exception e) {
       System.err.println("[TraceRoot] Error shutting down logger: " + e.getMessage());
     }
@@ -266,7 +260,7 @@ public class TraceRootLogger {
 
   /** Wrapper method to add trace correlation to MDC before logging */
   private void logWithTraceCorrelation(Runnable logAction) {
-    if (config != null && config.isLocalMode() && config.isTracerVerbose()) {
+    if (config != null && config.isLocalMode()) {
       // Local mode: just print info and proceed with normal logging
       System.out.println("[TraceRoot Local] Logging in local mode");
     }

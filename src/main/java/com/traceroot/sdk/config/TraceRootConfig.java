@@ -48,6 +48,9 @@ public interface TraceRootConfig {
   // Tracer verbose logging
   boolean isTracerVerbose();
 
+  // Root path for source code (for stacktrace transformation)
+  String getRootPath();
+
   // Internal properties (set during initialization)
   String getInternalName();
 
