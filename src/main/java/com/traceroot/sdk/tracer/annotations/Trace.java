@@ -16,6 +16,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Trace {
 
+  /**
+   * Default value for span name (Python decorator-like syntax). If provided, this takes precedence
+   * over spanName().
+   */
+  String value() default "";
+
   /** Custom span name. If not provided, method name will be used. */
   String spanName() default "";
 
