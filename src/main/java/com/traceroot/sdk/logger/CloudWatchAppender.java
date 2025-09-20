@@ -40,7 +40,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   @Override
   public void start() {
-    System.out.println("[TraceRoot] CloudWatchAppender.start() called");
 
     if (config == null) {
       String error = "TraceRoot config not set";
@@ -52,24 +51,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     if (!config.isEnableLogCloudExport()) {
       String info = "CloudWatch logging disabled - appender will not start";
       addInfo(info);
-      System.out.println("[TraceRoot] " + info);
       return;
     }
 
     try {
-      System.out.println("[TraceRoot] Initializing CloudWatch client...");
       initializeCloudWatchClient();
-
-      System.out.println("[TraceRoot] Ensuring log group and stream...");
       ensureLogGroupAndStream();
-
-      System.out.println("[TraceRoot] Starting batch processor...");
       startBatchProcessor();
 
       super.start();
       String success = "CloudWatch appender started successfully";
       addInfo(success);
-      System.out.println("[TraceRoot] " + success);
     } catch (Exception e) {
       String error = "Failed to start CloudWatch appender: " + e.getMessage();
       addError(error, e);
@@ -134,16 +126,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       throw new IllegalStateException("AWS credentials not available");
     }
 
-    System.out.println(
-        "[TraceRoot] AWS credentials - Access Key: "
-            + (credentials.getAccessKeyId() != null
-                ? credentials.getAccessKeyId().substring(0, 4) + "..."
-                : "null")
-            + ", Secret Key: "
-            + (credentials.getSecretAccessKey() != null ? "***" : "null")
-            + ", Session Token: "
-            + (credentials.getSessionToken() != null ? "***" : "null"));
-
     if (credentials.getAccessKeyId() == null || credentials.getSecretAccessKey() == null) {
       throw new IllegalStateException("AWS credentials have null access key or secret key");
     }
@@ -188,7 +170,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
               CreateLogGroupRequest.builder().logGroupName(logGroupName).build());
           addInfo("Created log group: " + logGroupName);
         } catch (Exception e) {
-          System.out.println("[TraceRoot] Could not create log group: " + e.getMessage());
+          System.err.println("[TraceRoot] Could not create log group: " + e.getMessage());
         }
       }
     } catch (Exception e) {
@@ -200,7 +182,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       } catch (ResourceAlreadyExistsException ex) {
         // Already exists, ignore
       } catch (Exception ex) {
-        System.out.println("[TraceRoot] Could not create log group: " + ex.getMessage());
+        System.err.println("[TraceRoot] Could not create log group: " + ex.getMessage());
       }
     }
 
@@ -227,7 +209,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
                   .build());
           addInfo("Created log stream: " + logStreamName);
         } catch (Exception e) {
-          System.out.println("[TraceRoot] Could not create log stream: " + e.getMessage());
+          System.err.println("[TraceRoot] Could not create log stream: " + e.getMessage());
         }
       }
     } catch (Exception e) {
@@ -242,7 +224,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       } catch (ResourceAlreadyExistsException ex) {
         // Already exists, ignore
       } catch (Exception ex) {
-        System.out.println("[TraceRoot] Could not create log stream: " + ex.getMessage());
+        System.err.println("[TraceRoot] Could not create log stream: " + ex.getMessage());
       }
     }
   }
@@ -380,16 +362,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       logData.put("environment", "development");
     }
 
-    // 6. userId (single field, not userId_0 and userId_1)
     Map<String, String> mdc = event.getMDCPropertyMap();
-    if (mdc != null && !mdc.isEmpty()) {
-      String userId = mdc.get("userId");
-      logData.put("userId", userId != null ? userId : "user123");
-    } else {
-      logData.put("userId", "user123");
-    }
 
-    // 7. requestId (from MDC if available)
+    // 6. requestId (from MDC if available)
     if (mdc != null && !mdc.isEmpty()) {
       String requestId = mdc.get("requestId");
       if (requestId != null) {
@@ -397,24 +372,24 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       }
     }
 
-    // 8. stack_trace
+    // 7. stack_trace
     String stackTrace = getCallerStackTrace(event);
     logData.put("stack_trace", stackTrace);
 
-    // 9. level (lowercase)
+    // 8. level (lowercase)
     logData.put("level", event.getLevel().toString().toLowerCase());
 
-    // 10. message
+    // 9. message
     logData.put("message", event.getFormattedMessage());
 
-    // 11. timestamp (in format: "2025-09-17 15:05:14,717")
+    // 10. timestamp (in format: "2025-09-17 15:05:14,717")
     Instant instant = Instant.ofEpochMilli(event.getTimeStamp());
     java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneId.systemDefault());
     String timestamp =
         zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS"));
     logData.put("timestamp", timestamp);
 
-    // 12. trace_id and span_id
+    // 11. trace_id and span_id
     Span span = Span.current();
     if (span != null) {
       SpanContext spanContext = span.getSpanContext();

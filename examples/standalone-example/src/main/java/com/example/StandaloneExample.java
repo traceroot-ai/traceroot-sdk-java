@@ -43,19 +43,16 @@ public class StandaloneExample {
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
             .awsRegion("us-west-2")
-            .enableSpanConsoleExport(true) // For local development
+            .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for cloud export
             .localMode(false) // Enable for local development
-            .logLevel(LogLevel.DEBUG) // Keep DEBUG level
-            .tracerVerbose(true) // For debugging
+            .logLevel(LogLevel.INFO)
             .build();
 
     // Initialize SDK (similar to Sentry.init(options))
     TraceRootSDK.initialize(config);
-
-    System.out.println("TraceRoot SDK initialized successfully!");
   }
 
   /** Simple business logic with tracing and logging */
@@ -67,20 +64,15 @@ public class StandaloneExample {
               logger.info("Processing data...");
               return "processed-data";
             });
-
+    // This will not be shown in the TraceRoot UI because it is not within a trace event
     logger.info("Result: {}", result);
   }
 
   /** Cleanup - should be called before application shutdown Similar to Sentry shutdown pattern */
   private static void shutdown() {
-    logger.info("Shutting down application...");
-
     // Force flush any pending spans/logs
     TraceRootSDK.forceFlush();
-
     // Shutdown SDK
     TraceRootSDK.shutdown();
-
-    System.out.println("TraceRoot SDK shutdown completed");
   }
 }
