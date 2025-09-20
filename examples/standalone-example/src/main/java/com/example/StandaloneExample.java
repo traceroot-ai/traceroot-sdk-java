@@ -3,6 +3,7 @@ package com.example;
 import com.traceroot.sdk.TraceRootSDK;
 import com.traceroot.sdk.config.TraceRootConfigImpl;
 import com.traceroot.sdk.logger.TraceRootLogger;
+import com.traceroot.sdk.tracer.annotations.Trace;
 import com.traceroot.sdk.types.LogLevel;
 
 /**
@@ -20,12 +21,23 @@ public class StandaloneExample {
     initializeTraceRoot();
 
     try {
-      // Your application logic with automatic tracing and logging
-      performBusinessLogic();
+      // Execute main application logic
+      runApplicationLogic();
     } finally {
       // Cleanup before application exit
       shutdown();
     }
+  }
+
+  /** Main application logic with automatic tracing and logging */
+  @Trace
+  private static void runApplicationLogic() {
+    // Your application logic with automatic tracing and logging
+    String result = performBusinessLogic();
+    logger.info("Result: {}", result);
+
+    // Call additional business logic
+    performAdditionalLogic();
   }
 
   /**
@@ -43,7 +55,7 @@ public class StandaloneExample {
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
             .awsRegion("us-west-2")
-            .enableSpanConsoleExport(false) // For local development
+            .enableSpanConsoleExport(true) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for cloud export
@@ -56,16 +68,16 @@ public class StandaloneExample {
   }
 
   /** Simple business logic with tracing and logging */
-  private static void performBusinessLogic() {
-    String result =
-        TraceRootSDK.trace(
-            "process-data",
-            () -> {
-              logger.info("Processing data...");
-              return "processed-data";
-            });
-    // This will not be shown in the TraceRoot UI because it is not within a trace event
-    logger.info("Result: {}", result);
+  @Trace("process-data")
+  private static String performBusinessLogic() {
+    logger.info("Processing data...");
+    return "processed-data";
+  }
+
+  /** Alternative example showing @Trace without explicit span name (uses method name) */
+  @Trace
+  private static void performAdditionalLogic() {
+    logger.info("Performing additional business logic...");
   }
 
   /** Cleanup - should be called before application shutdown Similar to Sentry shutdown pattern */
