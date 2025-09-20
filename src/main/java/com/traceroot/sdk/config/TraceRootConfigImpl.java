@@ -20,6 +20,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   private boolean localMode = false;
   private LogLevel logLevel = LogLevel.DEBUG;
   private boolean tracerVerbose = false;
+  private String rootPath;
 
   // Internal properties (set during initialization)
   private String internalName;
@@ -49,6 +50,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
     this.localMode = config.isLocalMode();
     this.logLevel = config.getLogLevel() != null ? config.getLogLevel() : this.logLevel;
     this.tracerVerbose = config.isTracerVerbose();
+    this.rootPath = config.getRootPath();
 
     this.internalName = this.name;
     this.internalSubName = this.serviceName + "-" + this.environment;
@@ -139,6 +141,11 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
     public Builder tracerVerbose(boolean tracerVerbose) {
       config.tracerVerbose = tracerVerbose;
+      return this;
+    }
+
+    public Builder rootPath(String rootPath) {
+      config.rootPath = rootPath;
       return this;
     }
 
@@ -292,6 +299,15 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
   public void setTracerVerbose(boolean tracerVerbose) {
     this.tracerVerbose = tracerVerbose;
+  }
+
+  @Override
+  public String getRootPath() {
+    return rootPath;
+  }
+
+  public void setRootPath(String rootPath) {
+    this.rootPath = rootPath;
   }
 
   @Override

@@ -55,12 +55,13 @@ public class StandaloneExample {
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
             .awsRegion("us-west-2")
-            .enableSpanConsoleExport(true) // For local development
+            .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for cloud export
             .localMode(false) // Enable for local development
             .logLevel(LogLevel.INFO)
+            .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
 
     // Initialize SDK (similar to Sentry.init(options))
