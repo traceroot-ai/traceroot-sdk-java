@@ -1,9 +1,9 @@
 package com.example;
 
-import com.traceroot.sdk.TraceRootSDK;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.logger.TraceRootLogger;
-import com.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.TraceRootSDK;
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.TraceRootLogger;
+import ai.traceroot.sdk.types.LogLevel;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,9 +1,9 @@
-package com.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger;
 
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.types.LogLevel;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.types.LogLevel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;

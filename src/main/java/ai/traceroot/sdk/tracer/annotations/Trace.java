@@ -1,4 +1,4 @@
-package com.traceroot.sdk.tracer.annotations;
+package ai.traceroot.sdk.tracer.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,11 +1,11 @@
-package com.traceroot.sdk.tracer;
+package ai.traceroot.sdk.tracer;
 
-import com.traceroot.sdk.api.CredentialService;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.constants.TraceRootConstants;
-import com.traceroot.sdk.logger.TraceRootLogger;
-import com.traceroot.sdk.types.AwsCredentials;
-import com.traceroot.sdk.utils.CredentialRefreshScheduler;
+import ai.traceroot.sdk.api.CredentialService;
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.constants.TraceRootConstants;
+import ai.traceroot.sdk.logger.TraceRootLogger;
+import ai.traceroot.sdk.types.AwsCredentials;
+import ai.traceroot.sdk.utils.CredentialRefreshScheduler;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;

@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- Define the trace correlation converter -->
-    <conversionRule conversionWord="traceId" converterClass="com.traceroot.sdk.logger.TraceCorrelationConverter" />
+    <conversionRule conversionWord="traceId" converterClass="ai.traceroot.sdk.logger.TraceCorrelationConverter" />
 
     <!-- Console appender with trace correlation -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -26,7 +26,7 @@
     </appender>
 
     <!-- CloudWatch appender (configured programmatically) -->
-    <appender name="CLOUDWATCH" class="com.traceroot.sdk.logger.CloudWatchAppender">
+    <appender name="CLOUDWATCH" class="ai.traceroot.sdk.logger.CloudWatchAppender">
         <!-- This will be configured programmatically when TraceRoot is initialized -->
     </appender>
 
@@ -38,7 +38,7 @@
     </root>
 
     <!-- TraceRoot SDK specific logger -->
-    <logger name="com.traceroot.sdk" level="WARN" additivity="false">
+    <logger name="ai.traceroot.sdk" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </logger>

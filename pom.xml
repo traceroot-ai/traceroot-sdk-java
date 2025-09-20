@@ -3,14 +3,48 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.traceroot</groupId>
+    <groupId>ai.traceroot</groupId>
     <artifactId>traceroot-sdk-java</artifactId>
-    <version>1.0.0</version>
+    <version>0.0.1-alpha.1</version>
     <packaging>jar</packaging>
 
     <name>TraceRoot SDK for Java</name>
-    <description>Java SDK for TraceRoot tracing and logging with OpenTelemetry and CloudWatch integration</description>
-    <url>https://github.com/traceroot/traceroot-sdk-java</url>
+    <description>TraceRoot Java SDK</description>
+    <url>https://github.com/traceroot-ai/traceroot-sdk-java</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>TraceRoot.AI</name>
+            <email>founders@traceroot.ai</email>
+            <organization>TraceRoot.AI</organization>
+            <organizationUrl>https://traceroot.ai</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/traceroot-ai/traceroot-sdk-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com:traceroot-ai/traceroot-sdk-java.git</developerConnection>
+        <url>https://github.com/traceroot-ai/traceroot-sdk-java/tree/main</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -241,6 +275,52 @@
                         <version>1.9.20.1</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+
+            <!-- Source plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Javadoc plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- GPG plugin for signing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>

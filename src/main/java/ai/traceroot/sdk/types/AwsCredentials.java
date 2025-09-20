@@ -1,4 +1,4 @@
-package com.traceroot.sdk.types;
+package ai.traceroot.sdk.types;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

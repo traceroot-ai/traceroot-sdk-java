@@ -1,9 +1,9 @@
-package com.traceroot.sdk.utils;
+package ai.traceroot.sdk.utils;
 
-import com.traceroot.sdk.api.CredentialService;
-import com.traceroot.sdk.config.TraceRootConfigImpl;
-import com.traceroot.sdk.constants.TraceRootConstants;
-import com.traceroot.sdk.types.AwsCredentials;
+import ai.traceroot.sdk.api.CredentialService;
+import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.constants.TraceRootConstants;
+import ai.traceroot.sdk.types.AwsCredentials;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;

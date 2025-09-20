@@ -1,4 +1,4 @@
-package com.traceroot.sdk.types;
+package ai.traceroot.sdk.types;
 
 public enum LogLevel {
   DEBUG,

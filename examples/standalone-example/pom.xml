@@ -20,9 +20,9 @@
     <dependencies>
         <!-- TraceRoot SDK (from local repository) -->
         <dependency>
-            <groupId>com.traceroot</groupId>
+            <groupId>ai.traceroot</groupId>
             <artifactId>traceroot-sdk-java</artifactId>
-            <version>1.0.0</version>
+            <version>0.0.1-alpha.1</version>
         </dependency>
     </dependencies>
 
@@ -63,7 +63,7 @@
                     <!-- Weave the main SDK classes containing aspects -->
                     <weaveDependencies>
                         <weaveDependency>
-                            <groupId>com.traceroot</groupId>
+                            <groupId>ai.traceroot</groupId>
                             <artifactId>traceroot-sdk-java</artifactId>
                         </weaveDependency>
                     </weaveDependencies>
