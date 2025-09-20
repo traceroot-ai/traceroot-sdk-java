@@ -1,5 +1,14 @@
 # Development
 
+## Setup
+
+Setup Java development environment with OpenJDK 17 and Maven for MacOS:
+
+```bash
+brew install openjdk@17
+brew install maven
+```
+
 ## Building
 
 In the root directory, run:
@@ -18,6 +27,7 @@ mvn clean compile exec:java
 ```
 
 For the spring-boot example, in the root directory, run:
+
 ```bash
 cd examples/spring-boot-example
 mvn spring-boot:run
