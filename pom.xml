@@ -149,7 +149,7 @@
             <artifactId>httpclient5</artifactId>
             <version>5.2.1</version>
         </dependency>
-        
+
         <!-- AspectJ for annotations -->
         <dependency>
             <groupId>org.aspectj</groupId>
