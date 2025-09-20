@@ -29,3 +29,5 @@ replay_pid*
 # Maven
 target/
 maven-status/
+
+venv/
