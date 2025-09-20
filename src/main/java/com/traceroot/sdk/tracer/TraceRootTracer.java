@@ -53,7 +53,10 @@ public class TraceRootTracer {
       instance.config = config;
 
       try {
-        // First prepare config (this fetches AWS credentials)
+        // First suppress noisy loggers before making any HTTP requests
+        instance.suppressNoisyLoggers();
+
+        // Then prepare config (this fetches AWS credentials)
         instance.prepareConfig();
 
         // Then setup tracing and logging (both need credentials)
@@ -138,7 +141,7 @@ public class TraceRootTracer {
 
         // Shutdown tracer provider
         if (tracerProvider != null) {
-          tracerProvider.shutdown().join(30, TimeUnit.SECONDS);
+          tracerProvider.shutdown().join(10, TimeUnit.SECONDS);
         }
 
         // Shutdown logging appenders
@@ -156,6 +159,28 @@ public class TraceRootTracer {
     }
   }
 
+  /** Suppress noisy loggers before making HTTP requests */
+  private void suppressNoisyLoggers() {
+    try {
+      ch.qos.logback.classic.LoggerContext context =
+          (ch.qos.logback.classic.LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+
+      // Suppress Apache HTTP Client logs
+      ch.qos.logback.classic.Logger httpClientLogger = context.getLogger("org.apache.hc");
+      httpClientLogger.setLevel(ch.qos.logback.classic.Level.WARN);
+
+      // Suppress AWS SDK logs
+      ch.qos.logback.classic.Logger awsSdkLogger = context.getLogger("software.amazon.awssdk");
+      awsSdkLogger.setLevel(ch.qos.logback.classic.Level.WARN);
+
+      // Suppress OpenTelemetry logs
+      ch.qos.logback.classic.Logger otlpLogger = context.getLogger("io.opentelemetry");
+      otlpLogger.setLevel(ch.qos.logback.classic.Level.WARN);
+    } catch (Exception e) {
+      // Ignore errors in logger setup
+    }
+  }
+
   /** Prepare and validate configuration */
   private void prepareConfig() {
     // Fetch AWS credentials if any cloud export is enabled
@@ -166,11 +191,13 @@ public class TraceRootTracer {
       AwsCredentials credentials = credentialService.fetchAwsCredentialsSync(config);
 
       if (credentials != null) {
-        System.out.println(
-            "[TraceRoot] Setting AWS credentials in config: "
-                + (credentials.getAccessKeyId() != null
-                    ? credentials.getAccessKeyId().substring(0, 4) + "..."
-                    : "null"));
+        if (config.isTracerVerbose()) {
+          System.out.println(
+              "[TraceRoot] Setting AWS credentials in config: "
+                  + (credentials.getAccessKeyId() != null
+                      ? credentials.getAccessKeyId().substring(0, 4) + "..."
+                      : "null"));
+        }
 
         config.setAwsCredentials(credentials);
 
@@ -189,7 +216,9 @@ public class TraceRootTracer {
               credentials.getOtlpEndpoint());
         }
       } else {
-        System.out.println("[TraceRoot] No credentials returned from API");
+        if (config.isTracerVerbose()) {
+          System.out.println("[TraceRoot] No credentials returned from API");
+        }
       }
 
       try {

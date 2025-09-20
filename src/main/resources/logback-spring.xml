@@ -38,7 +38,7 @@
     </root>
 
     <!-- TraceRoot SDK specific logger -->
-    <logger name="com.traceroot.sdk" level="DEBUG" additivity="false">
+    <logger name="com.traceroot.sdk" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </logger>
@@ -48,5 +48,10 @@
 
     <!-- Reduce AWS SDK noise in logs -->
     <logger name="software.amazon.awssdk" level="WARN" />
+
+    <!-- Reduce Apache HTTP Client noise in logs -->
+    <logger name="org.apache.hc" level="WARN" />
+    <logger name="org.apache.hc.client5" level="WARN" />
+    <logger name="org.apache.hc.core5" level="WARN" />
 
 </configuration>

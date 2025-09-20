@@ -42,7 +42,9 @@ public class TraceRootLogger {
 
   /** Initialize TraceRoot logging with configuration */
   public static void initialize(TraceRootConfigImpl config) {
-    System.out.println("[TraceRoot] TraceRootLogger.initialize() called");
+    if (config.isTracerVerbose()) {
+      System.out.println("[TraceRoot] TraceRootLogger.initialize() called");
+    }
     LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
     context.putObject("traceRootConfig", config);
 
@@ -51,47 +53,59 @@ public class TraceRootLogger {
     ch.qos.logback.classic.Level logbackLevel = convertLogLevel(config.getLogLevel());
     rootLogger.setLevel(logbackLevel);
 
+    // Ensure Apache HTTP Client logs are suppressed
+    Logger httpClientLogger = context.getLogger("org.apache.hc");
+    httpClientLogger.setLevel(ch.qos.logback.classic.Level.WARN);
+
     // Configure JSON console appender if console logging is enabled
-    System.out.println("[TraceRoot] Console export enabled: " + config.isEnableLogConsoleExport());
+    if (config.isTracerVerbose()) {
+      System.out.println(
+          "[TraceRoot] Console export enabled: " + config.isEnableLogConsoleExport());
+    }
     if (config.isEnableLogConsoleExport()) {
-      System.out.println("[TraceRoot] Setting up JSON console appender");
+      if (config.isTracerVerbose()) {
+        System.out.println("[TraceRoot] Setting up JSON console appender");
+      }
       setupJsonConsoleAppender(context, config);
     } else {
-      System.out.println("[TraceRoot] JSON console appender not setup - console export disabled");
+      if (config.isTracerVerbose()) {
+        System.out.println("[TraceRoot] JSON console appender not setup - console export disabled");
+      }
     }
 
     // Configure CloudWatch appender if cloud logging is enabled
     if (config.isEnableLogCloudExport() && config.getAwsCredentials() != null) {
-      System.out.println(
-          "[TraceRoot] Setting up CloudWatch appender - cloud export enabled and credentials"
-              + " available");
+      if (config.isTracerVerbose()) {
+        System.out.println(
+            "[TraceRoot] Setting up CloudWatch appender - cloud export enabled and credentials"
+                + " available");
+      }
       setupCloudWatchAppender(context, config);
     } else {
-      System.out.println(
-          "[TraceRoot] CloudWatch appender not setup - cloud export enabled: "
-              + config.isEnableLogCloudExport()
-              + ", credentials available: "
-              + (config.getAwsCredentials() != null));
+      if (config.isTracerVerbose()) {
+        System.out.println(
+            "[TraceRoot] CloudWatch appender not setup - cloud export enabled: "
+                + config.isEnableLogCloudExport()
+                + ", credentials available: "
+                + (config.getAwsCredentials() != null));
+      }
     }
   }
 
   /** Setup JSON console appender programmatically */
   private static void setupJsonConsoleAppender(LoggerContext context, TraceRootConfigImpl config) {
     try {
-      System.out.println("[TraceRoot] Creating JSON console appender...");
       JsonConsoleAppender jsonConsoleAppender = new JsonConsoleAppender();
       jsonConsoleAppender.setContext(context);
       jsonConsoleAppender.setConfig(config);
       jsonConsoleAppender.setName("JsonConsoleAppender");
 
-      System.out.println("[TraceRoot] Starting JSON console appender");
       jsonConsoleAppender.start();
 
       // Remove existing console appender and add JSON console appender
       Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
       rootLogger.detachAppender("CONSOLE");
       rootLogger.addAppender(jsonConsoleAppender);
-      System.out.println("[TraceRoot] JSON console appender added to root logger successfully");
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
@@ -101,7 +115,6 @@ public class TraceRootLogger {
   /** Setup CloudWatch appender programmatically */
   private static void setupCloudWatchAppender(LoggerContext context, TraceRootConfigImpl config) {
     try {
-      System.out.println("[TraceRoot] Creating CloudWatch appender...");
       CloudWatchAppender cloudWatchAppender = new CloudWatchAppender();
       cloudWatchAppender.setContext(context);
       cloudWatchAppender.setConfig(config);
@@ -112,21 +125,16 @@ public class TraceRootLogger {
       String logStreamName =
           String.format("%s-%s", config.getServiceName(), config.getEnvironment());
 
-      System.out.println("[TraceRoot] CloudWatch log group: " + logGroupName);
-      System.out.println("[TraceRoot] CloudWatch log stream: " + logStreamName);
-
       cloudWatchAppender.setLogGroupName(logGroupName);
       cloudWatchAppender.setLogStreamName(logStreamName);
       cloudWatchAppender.setRegion(config.getAwsRegion());
       cloudWatchAppender.setName("CloudWatchAppender");
 
-      System.out.println("[TraceRoot] Starting CloudWatch appender for log group: " + logGroupName);
       cloudWatchAppender.start();
 
       // Add appender to root logger
       Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
       rootLogger.addAppender(cloudWatchAppender);
-      System.out.println("[TraceRoot] CloudWatch appender added to root logger successfully");
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup CloudWatch appender: " + e.getMessage());
@@ -137,11 +145,14 @@ public class TraceRootLogger {
   public static void shutdown() {
     try {
       LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+      TraceRootConfigImpl config = (TraceRootConfigImpl) context.getObject("traceRootConfig");
 
       // Stop all appenders
       context.stop();
 
-      System.out.println("[TraceRoot] Logger shutdown completed");
+      if (config != null && config.isTracerVerbose()) {
+        System.out.println("[TraceRoot] Logger shutdown completed");
+      }
     } catch (Exception e) {
       System.err.println("[TraceRoot] Error shutting down logger: " + e.getMessage());
     }

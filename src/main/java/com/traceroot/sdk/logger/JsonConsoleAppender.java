@@ -61,22 +61,6 @@ public class JsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
       logData.put("environment", "development");
     }
 
-    // User ID fields (extract from MDC if available)
-    Map<String, String> mdc = event.getMDCPropertyMap();
-    if (mdc != null && !mdc.isEmpty()) {
-      String userId = mdc.get("userId");
-      if (userId != null) {
-        logData.put("userId_0", userId);
-        logData.put("userId_1", userId);
-      } else {
-        logData.put("userId_0", "user123");
-        logData.put("userId_1", "user123");
-      }
-    } else {
-      logData.put("userId_0", "user123");
-      logData.put("userId_1", "user123");
-    }
-
     // Stack trace (caller information)
     String stackTrace = getCallerStackTrace(event);
     logData.put("stack_trace", stackTrace);
