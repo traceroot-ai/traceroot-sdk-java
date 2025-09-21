@@ -29,7 +29,6 @@ jobs:
       - name: Upgrade pip and install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[all]"
           pip install pre-commit
 
       - name: Run pre-commit
