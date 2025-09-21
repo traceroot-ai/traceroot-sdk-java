@@ -8,11 +8,11 @@
 
 <div align="center">
 
-\[![Testing Status][testing-image]\][testing-url]
-\[![Documentation][docs-image]\][docs-url]
-\[![PyPI Version][pypi-image]\][pypi-url]
-\[![PyPI SDK Downloads][pypi-sdk-downloads-image]\][pypi-sdk-downloads-url]
-\[![TraceRoot.AI Website][company-website-image]\][company-website-url]
+[![Testing Status][testing-image]][testing-url]
+[![Documentation][docs-image]][docs-url]
+[![PyPI Version][pypi-image]][pypi-url]
+[![PyPI SDK Downloads][pypi-sdk-downloads-image]][pypi-sdk-downloads-url]
+[![TraceRoot.AI Website][company-website-image]][company-website-url]
 
 </div>
 
