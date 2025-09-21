@@ -33,7 +33,7 @@ public class StandaloneExample {
   @Trace
   private static void runApplicationLogic() {
     // Your application logic with automatic tracing and logging
-    String result = performBusinessLogic();
+    String result = performBusinessLogic(123);
     logger.info("Result: {}", result);
 
     // Call additional business logic
@@ -69,9 +69,9 @@ public class StandaloneExample {
   }
 
   /** Simple business logic with tracing and logging */
-  @Trace("process-data")
-  private static String performBusinessLogic() {
-    logger.info("Processing data...");
+  @Trace(spanName = "process-data-name", traceParams = true)
+  private static String performBusinessLogic(int businessNumber) {
+    logger.info("Processing data for business number: " + businessNumber);
     return "processed-data";
   }
 

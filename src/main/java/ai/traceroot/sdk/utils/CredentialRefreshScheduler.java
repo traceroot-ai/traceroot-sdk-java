@@ -38,7 +38,7 @@ public class CredentialRefreshScheduler {
   /** Start the credential refresh scheduler */
   public void start() {
     if (isShutdown) {
-      logger.warn("[TraceRoot] Cannot start scheduler - already shutdown");
+      logger.error("[TraceRoot] Cannot start scheduler - already shutdown");
       return;
     }
 
