@@ -69,6 +69,44 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- AspectJ weaving plugin for @Trace annotation support -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.14.0</version>
+                <configuration>
+                    <complianceLevel>17</complianceLevel>
+                    <source>17</source>
+                    <target>17</target>
+                    <showWeaveInfo>true</showWeaveInfo>
+                    <verbose>true</verbose>
+                    <Xlint>ignore</Xlint>
+                    <encoding>UTF-8</encoding>
+                    <!-- Weave the main SDK classes containing aspects -->
+                    <weaveDependencies>
+                        <weaveDependency>
+                            <groupId>ai.traceroot</groupId>
+                            <artifactId>traceroot-sdk-java</artifactId>
+                        </weaveDependency>
+                    </weaveDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <!-- use this goal to weave all your main classes -->
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.20.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 </project>
