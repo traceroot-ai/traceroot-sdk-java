@@ -10,6 +10,7 @@
 
 [![Documentation][docs-image]][docs-url]
 [![TraceRoot.AI Website][company-website-image]][company-website-url]
+[![Maven Central][maven-image]][maven-url]
 
 </div>
 
@@ -53,3 +54,5 @@ Please reach out to founders@traceroot.ai if you have any questions.
 [company-website-url]: https://traceroot.ai
 [docs-image]: https://img.shields.io/badge/docs-traceroot.ai-0dbf43
 [docs-url]: https://docs.traceroot.ai
+[maven-image]: https://img.shields.io/maven-central/v/ai.traceroot/traceroot-sdk-java?color=f89820
+[maven-url]: http://central.sonatype.com/artifact/ai.traceroot/traceroot-sdk-java
