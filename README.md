@@ -21,13 +21,28 @@ In the root directory, run:
 
 ```bash
 mvn clean install -Dgpg.skip=true
+export TRACEROOT_TOKEN=your_token
+export TRACEROOT_ROOT_PATH=your_absolute_path_to_git_repo
+cd examples/spring-boot-example
+mvn spring-boot:run
 ```
 
 then
 
 ```bash
-cd examples/spring-boot-example
-mvn spring-boot:run
+# List tasks
+curl http://localhost:8080/api/tasks
+
+# Create task
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"read Spring docs"}'
+
+# Toggle task
+curl -X PUT http://localhost:8080/api/tasks/1/toggle
+
+# Delete task
+curl -X DELETE http://localhost:8080/api/tasks/1
 ```
 
 ## Contact Us
