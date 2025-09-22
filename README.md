@@ -1,4 +1,4 @@
-# TraceRoot Python SDK
+# TraceRoot Java SDK
 
 <div align="center">
   <a href="https://traceroot.ai/">
@@ -8,10 +8,7 @@
 
 <div align="center">
 
-[![Testing Status][testing-image]][testing-url]
 [![Documentation][docs-image]][docs-url]
-[![PyPI Version][pypi-image]][pypi-url]
-[![PyPI SDK Downloads][pypi-sdk-downloads-image]][pypi-sdk-downloads-url]
 [![TraceRoot.AI Website][company-website-image]][company-website-url]
 
 </div>
@@ -33,15 +30,6 @@ cd examples/spring-boot-example
 mvn spring-boot:run
 ```
 
-## Standalone Example
-
-In the root directory, run:
-
-```bash
-cd examples/standalone-example
-mvn clean compile exec:java
-```
-
 ## Contact Us
 
 Please reach out to founders@traceroot.ai if you have any questions.
@@ -50,9 +38,3 @@ Please reach out to founders@traceroot.ai if you have any questions.
 [company-website-url]: https://traceroot.ai
 [docs-image]: https://img.shields.io/badge/docs-traceroot.ai-0dbf43
 [docs-url]: https://docs.traceroot.ai
-[pypi-image]: https://badge.fury.io/py/traceroot.svg
-[pypi-sdk-downloads-image]: https://static.pepy.tech/badge/traceroot
-[pypi-sdk-downloads-url]: https://pypi.python.org/pypi/traceroot
-[pypi-url]: https://pypi.python.org/pypi/traceroot
-[testing-image]: https://github.com/traceroot-ai/traceroot/actions/workflows/test.yml/badge.svg
-[testing-url]: https://github.com/traceroot-ai/traceroot/actions/workflows/test.yml
