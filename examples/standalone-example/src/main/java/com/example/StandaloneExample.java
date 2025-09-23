@@ -54,7 +54,7 @@ public class StandaloneExample {
             .githubCommitHash("main")
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
-            .awsRegion("us-west-2")
+            .region("us-west-2")
             .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export

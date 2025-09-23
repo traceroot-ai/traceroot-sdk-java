@@ -21,7 +21,7 @@ public interface TraceRootConfig {
   String getName();
 
   // AWS Configuration
-  String getAwsRegion();
+  String getRegion();
 
   // OpenTelemetry Configuration
   String getOtlpEndpoint();

@@ -10,7 +10,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   private String githubCommitHash;
   private String token;
   private String name;
-  private String awsRegion = "us-west-2";
+  private String region = "us-west-2";
   private String otlpEndpoint = "http://localhost:4318/v1/traces";
   private String environment = "development";
   private boolean enableSpanConsoleExport = false;
@@ -39,7 +39,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
         config.getGithubCommitHash() != null ? config.getGithubCommitHash() : "unknown";
     this.token = config.getToken();
     this.name = config.getName();
-    this.awsRegion = config.getAwsRegion() != null ? config.getAwsRegion() : this.awsRegion;
+    this.region = config.getRegion() != null ? config.getRegion() : this.region;
     this.otlpEndpoint =
         config.getOtlpEndpoint() != null ? config.getOtlpEndpoint() : this.otlpEndpoint;
     this.environment = config.getEnvironment() != null ? config.getEnvironment() : this.environment;
@@ -94,8 +94,8 @@ public class TraceRootConfigImpl implements TraceRootConfig {
       return this;
     }
 
-    public Builder awsRegion(String awsRegion) {
-      config.awsRegion = awsRegion;
+    public Builder region(String region) {
+      config.region = region;
       return this;
     }
 
@@ -212,12 +212,12 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   }
 
   @Override
-  public String getAwsRegion() {
-    return awsRegion;
+  public String getRegion() {
+    return region;
   }
 
-  public void setAwsRegion(String awsRegion) {
-    this.awsRegion = awsRegion;
+  public void setRegion(String region) {
+    this.region = region;
   }
 
   @Override
