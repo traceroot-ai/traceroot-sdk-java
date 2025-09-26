@@ -150,6 +150,20 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>cloudwatchlogs</artifactId>
         </dependency>
+
+        <!-- Tencent CLS SDK -->
+        <dependency>
+            <groupId>com.tencentcloudapi.cls</groupId>
+            <artifactId>tencentcloud-cls-sdk-java</artifactId>
+            <version>1.0.15</version>
+        </dependency>
+
+        <!-- Tencent Cloud SDK for CLS Management API -->
+        <dependency>
+            <groupId>com.tencentcloudapi</groupId>
+            <artifactId>tencentcloud-sdk-java-cls</artifactId>
+            <version>3.1.1142</version>
+        </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>

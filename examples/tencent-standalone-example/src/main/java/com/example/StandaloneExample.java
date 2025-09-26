@@ -5,12 +5,15 @@ import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.types.Provider;
+import ai.traceroot.sdk.types.TencentCredentials;
 
 /**
- * Standalone Java example for TraceRoot SDK
+ * Standalone Java example for TraceRoot SDK with Tencent Cloud CLS
  *
- * <p>This example shows how to manually initialize TraceRoot SDK similar to how Sentry is
- * initialized in Java applications.
+ * <p>This example shows how to manually initialize TraceRoot SDK with Tencent Cloud provider for
+ * logging to Tencent Cloud CLS (Cloud Log Service), similar to how Sentry is initialized in Java
+ * applications.
  */
 public class StandaloneExample {
 
@@ -41,30 +44,42 @@ public class StandaloneExample {
   }
 
   /**
-   * Manual TraceRoot initialization - should be called early in application lifecycle Similar to
-   * Sentry.init() pattern
+   * Manual TraceRoot initialization with Tencent Cloud CLS - should be called early in application
+   * lifecycle Similar to Sentry.init() pattern
    */
   private static void initializeTraceRoot() {
-    // Create configuration to match expected output format
+    // Create configuration for Tencent Cloud provider
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
-            .serviceName("standalone-java-app")
+            .serviceName("tencent-standalone-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
-            .region("us-west-2")
+            .provider(Provider.TENCENT) // Use Tencent Cloud provider
+            .region("ap-guangzhou") // Tencent Cloud region (default)
             .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
-            .enableSpanCloudExport(
-                System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT")) // Enable for cloud export
-            .enableLogCloudExport(
-                System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT")) // Enable for cloud export
+            .enableSpanCloudExport(true) // Enable for cloud export
+            .enableLogCloudExport(true) // Enable for Tencent CLS export
             .localMode(false) // Enable for local development
             .logLevel(LogLevel.INFO)
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
+
+    // Configure Tencent Cloud credentials (required for Tencent provider)
+    TencentCredentials tencentCredentials = new TencentCredentials();
+    tencentCredentials.setSecretId(
+        System.getenv("TENCENT_SECRET_ID")); // Required: Get from environment
+    tencentCredentials.setSecretKey(
+        System.getenv("TENCENT_SECRET_KEY")); // Required: Get from environment
+    tencentCredentials.setRegion("ap-hongkong"); // Optional: defaults to ap-hongkong
+    tencentCredentials.setLogset(
+        System.getenv("TENCENT_LOGSET")); // Optional: CLS logset name (like AWS log group)
+
+    // Set credentials on config
+    config.setTencentCredentials(tencentCredentials);
 
     // Initialize SDK (similar to Sentry.init(options))
     TraceRootSDK.initialize(config);

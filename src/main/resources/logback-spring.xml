@@ -30,11 +30,17 @@
         <!-- This will be configured programmatically when TraceRoot is initialized -->
     </appender>
 
+    <!-- Tencent CLS appender (configured programmatically) -->
+    <appender name="TENCENT_CLS" class="ai.traceroot.sdk.logger.TencentCLSAppender">
+        <!-- This will be configured programmatically when TraceRoot is initialized -->
+    </appender>
+
     <!-- Root logger configuration -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
         <!-- CloudWatch appender is added programmatically when enabled -->
+        <!-- Tencent CLS appender is added programmatically when enabled -->
     </root>
 
     <!-- TraceRoot SDK specific logger -->
@@ -53,5 +59,9 @@
     <logger name="org.apache.hc" level="WARN" />
     <logger name="org.apache.hc.client5" level="WARN" />
     <logger name="org.apache.hc.core5" level="WARN" />
+
+    <!-- Reduce Tencent Cloud SDK noise in logs -->
+    <logger name="com.tencentcloudapi" level="WARN" />
+    <logger name="java.net.http" level="WARN" />
 
 </configuration>

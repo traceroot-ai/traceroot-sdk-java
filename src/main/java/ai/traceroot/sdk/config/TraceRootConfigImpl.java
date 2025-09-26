@@ -4,6 +4,7 @@ import ai.traceroot.sdk.constants.TraceRootConstants;
 import ai.traceroot.sdk.types.AwsCredentials;
 import ai.traceroot.sdk.types.LogLevel;
 import ai.traceroot.sdk.types.Provider;
+import ai.traceroot.sdk.types.TencentCredentials;
 
 public class TraceRootConfigImpl implements TraceRootConfig {
   private String serviceName;
@@ -31,6 +32,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
   // Provider-specific credentials (optional, only required when using respective providers)
   private AwsCredentials awsCredentials; // Optional: only required when provider is AWS
+  private TencentCredentials tencentCredentials; // Optional: only required when provider is TENCENT
 
   public TraceRootConfigImpl() {}
 
@@ -417,5 +419,13 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
   public void setAwsCredentials(AwsCredentials awsCredentials) {
     this.awsCredentials = awsCredentials;
+  }
+
+  public TencentCredentials getTencentCredentials() {
+    return tencentCredentials;
+  }
+
+  public void setTencentCredentials(TencentCredentials tencentCredentials) {
+    this.tencentCredentials = tencentCredentials;
   }
 }
