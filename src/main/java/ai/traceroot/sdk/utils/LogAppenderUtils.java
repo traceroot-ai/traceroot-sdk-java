@@ -104,8 +104,28 @@ public class LogAppenderUtils {
     return callerData.length > 0 ? callerData[0] : null;
   }
 
+  /*
+   * MEMORY SAFETY: Performance Optimization Cache
+   *
+   * ORIGINAL RISK: Repeated system property calls and file system operations
+   * System.getProperty("user.dir") and File.getCanonicalPath() were called
+   * on every single log event, causing:
+   *
+   * 1. Performance degradation (thousands of system calls per second)
+   * 2. Memory pressure from temporary File objects
+   * 3. GC overhead from string allocations
+   * 4. File system contention in high-throughput scenarios
+   *
+   * OUR SOLUTION: Cache + Eliminate File System Calls
+   */
+
+  // MEMORY SAFETY: Cache working directory to avoid repeated system property calls
+  private static volatile String cachedWorkingDir = null;
+
   /**
    * Construct file path from StackTraceElement
+   *
+   * <p>MEMORY SAFETY: Optimized for high-throughput logging with minimal allocations
    *
    * @param caller The stack trace element
    * @return File path string (absolute path, to be made relative by root path transformation)
@@ -119,8 +139,27 @@ public class LogAppenderUtils {
       fileName = simpleClassName + ".java";
     }
 
-    // Get the current working directory as absolute path
-    String workingDir = System.getProperty("user.dir");
+    /*
+     * MEMORY SAFETY: Cached Working Directory Access
+     *
+     * WHY CACHE: System.getProperty() calls are expensive and unnecessary
+     * for every log event since working directory doesn't change during runtime.
+     *
+     * THREAD SAFETY: Double-checked locking pattern ensures:
+     * - Only one thread initializes the cache
+     * - Volatile ensures visibility across threads
+     * - Minimal synchronization overhead after initialization
+     */
+    String workingDir = cachedWorkingDir;
+    if (workingDir == null) {
+      synchronized (LogAppenderUtils.class) {
+        workingDir = cachedWorkingDir;
+        if (workingDir == null) {
+          // MEMORY SAFETY: One-time initialization, cached for application lifetime
+          workingDir = cachedWorkingDir = System.getProperty("user.dir");
+        }
+      }
+    }
 
     // Convert package to path and construct absolute path
     String packagePath = className.replace('.', '/');
@@ -134,16 +173,20 @@ public class LogAppenderUtils {
     // Construct absolute path: workingDir + /src/main/java/ + packagePath
     String absolutePath = workingDir + "/src/main/java/" + packagePath;
 
-    // Normalize the path and return absolute path
-    // The root path transformation in the caller will make it relative
-    try {
-      absolutePath = new java.io.File(absolutePath).getCanonicalPath().replace('\\', '/');
-    } catch (Exception e) {
-      // If canonical path fails, just use the constructed path
-      absolutePath = absolutePath.replace('\\', '/');
-    }
-
-    return absolutePath;
+    /*
+     * MEMORY SAFETY: No File System Calls
+     *
+     * PREVIOUS RISK: new File(absolutePath).getCanonicalPath()
+     * - Created temporary File objects on every log call
+     * - Performed expensive file system I/O operations
+     * - Could cause contention and memory pressure
+     *
+     * OUR SOLUTION: Simple string normalization
+     * - No object allocation except result string
+     * - No file system access
+     * - Consistent path format across platforms
+     */
+    return absolutePath.replace('\\', '/');
   }
 
   /**
@@ -170,6 +213,9 @@ public class LogAppenderUtils {
 
   /**
    * Create base log metadata that's common across all appenders
+   *
+   * <p>MEMORY SAFETY: This method is called for every log event in high-throughput applications.
+   * All operations are optimized to minimize allocations and avoid memory leaks.
    *
    * @param event The log event
    * @param config TraceRoot configuration
@@ -219,13 +265,34 @@ public class LogAppenderUtils {
       }
     }
 
+    /*
+     * MEMORY SAFETY: Stack Trace Handling Strategy
+     *
+     * CRITICAL TIMING ISSUE: Stack traces must be captured at log creation time,
+     * not log processing time, especially for async appenders.
+     *
+     * THE PROBLEM WE SOLVED:
+     * - Async appenders (like TencentCLS) process logs on background threads
+     * - event.getCallerData() captures stack trace at processing time
+     * - By processing time, call stack shows shutdown/batch methods instead of user code
+     * - Result: Incorrect stack traces like "TraceRootSDK.shutdown:149"
+     *
+     * OUR SOLUTION:
+     * 1. TraceRootLogger captures stack trace in MDC at creation time (correct thread context)
+     * 2. MDC values are preserved in log events across thread boundaries
+     * 3. We prefer MDC values over event.getCallerData() for accuracy
+     * 4. Fallback to getCallerData only for non-TraceRootLogger logs
+     */
+
     // Stack trace - prefer MDC value captured at log creation time
     String stackTrace = null;
     if (mdc != null) {
+      // MEMORY SAFETY: Use MDC value captured at correct time with proper thread context
       stackTrace = mdc.get("traceroot.stack_trace");
     }
     if (stackTrace == null) {
-      // Fallback to extracting from caller data (for non-TraceRootLogger logs)
+      // MEMORY SAFETY: Fallback for non-TraceRootLogger logs (direct SLF4J usage)
+      // Note: May be inaccurate for async processing but better than nothing
       stackTrace = getCallerStackTrace(event, config);
     }
     logData.put("stack_trace", stackTrace);
