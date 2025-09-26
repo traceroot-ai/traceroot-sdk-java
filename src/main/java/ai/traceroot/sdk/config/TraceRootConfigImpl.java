@@ -77,6 +77,27 @@ public class TraceRootConfigImpl implements TraceRootConfig {
       builder.provider(Provider.fromString(providerEnv));
     }
 
+    // Set export configurations from environment variables
+    String spanConsoleExport = System.getenv(TraceRootConstants.ENV_ENABLE_SPAN_CONSOLE_EXPORT);
+    if (spanConsoleExport != null) {
+      builder.enableSpanConsoleExport(Boolean.parseBoolean(spanConsoleExport));
+    }
+
+    String logConsoleExport = System.getenv(TraceRootConstants.ENV_ENABLE_LOG_CONSOLE_EXPORT);
+    if (logConsoleExport != null) {
+      builder.enableLogConsoleExport(Boolean.parseBoolean(logConsoleExport));
+    }
+
+    String spanCloudExport = System.getenv(TraceRootConstants.ENV_ENABLE_SPAN_CLOUD_EXPORT);
+    if (spanCloudExport != null) {
+      builder.enableSpanCloudExport(Boolean.parseBoolean(spanCloudExport));
+    }
+
+    String logCloudExport = System.getenv(TraceRootConstants.ENV_ENABLE_LOG_CLOUD_EXPORT);
+    if (logCloudExport != null) {
+      builder.enableLogCloudExport(Boolean.parseBoolean(logCloudExport));
+    }
+
     return builder;
   }
 
@@ -150,6 +171,35 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
     public Builder enableLogCloudExport(boolean enableLogCloudExport) {
       config.enableLogCloudExport = enableLogCloudExport;
+      return this;
+    }
+
+    // Overloaded methods for environment variable support
+    public Builder enableSpanConsoleExport(String enableSpanConsoleExport) {
+      if (enableSpanConsoleExport != null) {
+        config.enableSpanConsoleExport = Boolean.parseBoolean(enableSpanConsoleExport);
+      }
+      return this;
+    }
+
+    public Builder enableLogConsoleExport(String enableLogConsoleExport) {
+      if (enableLogConsoleExport != null) {
+        config.enableLogConsoleExport = Boolean.parseBoolean(enableLogConsoleExport);
+      }
+      return this;
+    }
+
+    public Builder enableSpanCloudExport(String enableSpanCloudExport) {
+      if (enableSpanCloudExport != null) {
+        config.enableSpanCloudExport = Boolean.parseBoolean(enableSpanCloudExport);
+      }
+      return this;
+    }
+
+    public Builder enableLogCloudExport(String enableLogCloudExport) {
+      if (enableLogCloudExport != null) {
+        config.enableLogCloudExport = Boolean.parseBoolean(enableLogCloudExport);
+      }
       return this;
     }
 
