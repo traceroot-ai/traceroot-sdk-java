@@ -57,8 +57,8 @@ public class StandaloneExample {
             .region("us-west-2")
             .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
-            .enableSpanCloudExport(true) // Enable for cloud export
-            .enableLogCloudExport(true) // Enable for cloud export
+            .enableSpanCloudExport(System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT")) // Enable for cloud export
+            .enableLogCloudExport(System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT")) // Enable for cloud export
             .localMode(false) // Enable for local development
             .logLevel(LogLevel.INFO)
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
