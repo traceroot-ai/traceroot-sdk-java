@@ -31,7 +31,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   // Internal state
   private AsyncProducerClient clsClient;
   private TraceRootConfigImpl config;
-  private final Queue<ILoggingEvent> logEventQueue = new ConcurrentLinkedQueue<>();
+  private final Queue<LogItem> logItemQueue = new ConcurrentLinkedQueue<>();
   private ScheduledExecutorService scheduler;
   private final AtomicLong processedLogs = new AtomicLong(0);
 
@@ -95,8 +95,13 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       return;
     }
 
-    // Add event to queue for batch processing
-    logEventQueue.offer(event);
+    // Process the event immediately to capture stack trace while MDC is available
+    try {
+      LogItem logItem = createLogItem(event);
+      logItemQueue.offer(logItem);
+    } catch (Exception e) {
+      System.err.println("[TraceRoot] Error creating log item: " + e.getMessage());
+    }
   }
 
   private void initializeCLSClient() throws Exception {
@@ -267,21 +272,16 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   }
 
   private void flushLogs() {
-    if (logEventQueue.isEmpty() || clsClient == null) {
+    if (logItemQueue.isEmpty() || clsClient == null) {
       return;
     }
 
-    // Process all events in the queue
+    // Process all items in the queue
     List<LogItem> logItems = new ArrayList<>();
-    ILoggingEvent event;
+    LogItem logItem;
 
-    while ((event = logEventQueue.poll()) != null && logItems.size() < 100) {
-      try {
-        LogItem logItem = createLogItem(event);
-        logItems.add(logItem);
-      } catch (Exception e) {
-        System.err.println("[TraceRoot] Error creating log item: " + e.getMessage());
-      }
+    while ((logItem = logItemQueue.poll()) != null && logItems.size() < 100) {
+      logItems.add(logItem);
     }
 
     if (logItems.isEmpty()) {

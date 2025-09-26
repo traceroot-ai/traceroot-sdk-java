@@ -212,7 +212,6 @@ public class LogAppenderUtils {
 
     // Add MDC context if available
     Map<String, String> mdc = event.getMDCPropertyMap();
-    System.out.println("[DEBUG] Event MDC contents: " + mdc);
     if (mdc != null && !mdc.isEmpty()) {
       String requestId = mdc.get("requestId");
       if (requestId != null) {
@@ -224,12 +223,10 @@ public class LogAppenderUtils {
     String stackTrace = null;
     if (mdc != null) {
       stackTrace = mdc.get("traceroot.stack_trace");
-      System.out.println("[DEBUG] MDC stack trace: " + stackTrace);
     }
     if (stackTrace == null) {
       // Fallback to extracting from caller data (for non-TraceRootLogger logs)
       stackTrace = getCallerStackTrace(event, config);
-      System.out.println("[DEBUG] Fallback stack trace: " + stackTrace);
     }
     logData.put("stack_trace", stackTrace);
 

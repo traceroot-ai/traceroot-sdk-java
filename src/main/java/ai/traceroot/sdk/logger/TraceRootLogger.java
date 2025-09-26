@@ -288,18 +288,18 @@ public class TraceRootLogger {
 
         String stackTraceInfo = String.format("%s:%s:%d", filePath, methodName, lineNumber);
         MDC.put("traceroot.stack_trace", stackTraceInfo);
-        System.out.println("[DEBUG] Set MDC stack trace: " + stackTraceInfo);
       }
 
       // The trace correlation will be automatically handled by TraceCorrelationConverter
       // in the Logback configuration
       logAction.run();
     } finally {
-      // Only restore original stack trace if there was one, otherwise leave our value
+      // Restore original stack trace or remove if it wasn't set
       if (originalStackTrace != null) {
         MDC.put("traceroot.stack_trace", originalStackTrace);
+      } else {
+        MDC.remove("traceroot.stack_trace");
       }
-      // Don't remove the stack trace we just set - let it persist for async appenders
     }
   }
 
