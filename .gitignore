@@ -31,3 +31,5 @@ target/
 maven-status/
 
 venv/
+
+.DS_Store
