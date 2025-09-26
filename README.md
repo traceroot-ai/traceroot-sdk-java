@@ -8,8 +8,9 @@
 
 <div align="center">
 
+[![Testing Status][testing-image]][testing-url]
 [![Documentation][docs-image]][docs-url]
-[![TraceRoot.AI Website][company-website-image]][company-website-url]
+[![TraceRoot.AI Website](https://raw.githubusercontent.com/traceroot-ai/traceroot/refs/heads/main/misc/images/custom-website-badge.svg)][company-website-url]
 [![Maven Central][maven-image]][maven-url]
 
 </div>
@@ -52,9 +53,10 @@ curl -X DELETE http://localhost:8080/api/tasks/1
 
 Please reach out to founders@traceroot.ai if you have any questions.
 
-[company-website-image]: https://img.shields.io/badge/website-traceroot.ai-black
 [company-website-url]: https://traceroot.ai
 [docs-image]: https://img.shields.io/badge/docs-traceroot.ai-0dbf43
 [docs-url]: https://docs.traceroot.ai
 [maven-image]: https://img.shields.io/maven-central/v/ai.traceroot/traceroot-sdk-java?color=f89820
 [maven-url]: http://central.sonatype.com/artifact/ai.traceroot/traceroot-sdk-java
+[testing-image]: https://github.com/traceroot-ai/traceroot-sdk-java/actions/workflows/test.yml/badge.svg
+[testing-url]: https://github.com/traceroot-ai/traceroot-sdk-java/actions/workflows/test.yml
