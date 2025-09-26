@@ -17,7 +17,7 @@ public class TencentCredentials {
   private String region;
   private String logset; // Equivalent to AWS Log Group
   private String topic; // Equivalent to AWS Log Stream
-  private String endpoint;
+  private String otlpEndpoint;
 
   public TencentCredentials() {}
 
@@ -28,14 +28,14 @@ public class TencentCredentials {
       String region,
       String logset,
       String topic,
-      String endpoint) {
+      String otlpEndpoint) {
     this.secretId = secretId;
     this.secretKey = secretKey;
     this.sessionToken = sessionToken;
     this.region = region;
     this.logset = logset;
     this.topic = topic;
-    this.endpoint = endpoint;
+    this.otlpEndpoint = otlpEndpoint;
   }
 
   public String getSecretId() {
@@ -86,11 +86,11 @@ public class TencentCredentials {
     this.topic = topic;
   }
 
-  public String getEndpoint() {
-    return endpoint;
+  public String getOtlpEndpoint() {
+    return otlpEndpoint;
   }
 
-  public void setEndpoint(String endpoint) {
-    this.endpoint = endpoint;
+  public void setOtlpEndpoint(String otlpEndpoint) {
+    this.otlpEndpoint = otlpEndpoint;
   }
 }

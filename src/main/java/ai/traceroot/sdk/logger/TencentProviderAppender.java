@@ -16,18 +16,8 @@ public class TencentProviderAppender implements ProviderAppender {
 
   @Override
   public Appender<ILoggingEvent> createAppender(LoggerContext context, TraceRootConfigImpl config) {
-    System.out.println("[TraceRoot] DEBUG: TencentProviderAppender.createAppender() called");
-    System.out.println(
-        "[TraceRoot] DEBUG: Provider="
-            + config.getProvider()
-            + ", supportsProvider="
-            + supportsProvider(config.getProvider()));
-    System.out.println(
-        "[TraceRoot] DEBUG: TencentCredentials="
-            + (config.getTencentCredentials() != null ? "present" : "null"));
 
     if (!supportsProvider(config.getProvider())) {
-      System.out.println("[TraceRoot] DEBUG: Provider not supported, returning null");
       return null;
     }
 
@@ -44,6 +34,8 @@ public class TencentProviderAppender implements ProviderAppender {
 
       // Set default logset (like AWS log group) and topic (like AWS log stream) from config
       String logset = config.getInternalName() != null ? config.getInternalName() : "traceroot";
+      clsAppender.setLogset(logset);
+
       // Topic follows pattern: serviceName + "-" + environment (like internalSubName)
       String defaultTopic =
           (config.getServiceName() != null ? config.getServiceName() : "traceroot-service")
@@ -51,24 +43,15 @@ public class TencentProviderAppender implements ProviderAppender {
               + (config.getEnvironment() != null ? config.getEnvironment() : "development");
       String topic =
           config.getInternalSubName() != null ? config.getInternalSubName() : defaultTopic;
-
-      System.out.println(
-          "[TraceRoot] DEBUG: Creating Tencent CLS appender with logset="
-              + logset
-              + ", topic="
-              + topic);
-
-      clsAppender.setLogset(logset);
       clsAppender.setTopic(topic);
+
       clsAppender.setRegion(config.getRegion() != null ? config.getRegion() : "ap-hongkong");
 
       clsAppender.start();
-      System.out.println("[TraceRoot] DEBUG: Tencent CLS appender created and started");
       return clsAppender;
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to create Tencent CLS appender: " + e.getMessage());
-      e.printStackTrace();
       return null;
     }
   }
