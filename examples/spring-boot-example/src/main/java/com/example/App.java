@@ -33,7 +33,7 @@ public class App {
             .githubCommitHash("main")
             .token(System.getenv("TRACEROOT_TOKEN"))
             .environment("development")
-            .awsRegion("us-west-2")
+            .region("us-west-2")
             .enableSpanConsoleExport(false)
             .enableLogConsoleExport(true)
             .enableSpanCloudExport(true)

@@ -13,7 +13,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   private String token;
   private String name;
   private Provider provider = Provider.AWS;
-  private String awsRegion = "us-west-2";
+  private String region = "us-west-2";
   private String otlpEndpoint = "http://localhost:4318/v1/traces";
   private String environment = "development";
   private boolean enableSpanConsoleExport = false;
@@ -28,7 +28,9 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   // Internal properties (set during initialization)
   private String internalName;
   private String internalSubName;
-  private AwsCredentials awsCredentials;
+
+  // Provider-specific credentials (optional, only required when using respective providers)
+  private AwsCredentials awsCredentials; // Optional: only required when provider is AWS
 
   public TraceRootConfigImpl() {}
 
@@ -43,7 +45,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
     this.token = config.getToken();
     this.name = config.getName();
     this.provider = config.getProvider() != null ? config.getProvider() : this.provider;
-    this.awsRegion = config.getAwsRegion() != null ? config.getAwsRegion() : this.awsRegion;
+    this.region = config.getRegion() != null ? config.getRegion() : this.region;
     this.otlpEndpoint =
         config.getOtlpEndpoint() != null ? config.getOtlpEndpoint() : this.otlpEndpoint;
     this.environment = config.getEnvironment() != null ? config.getEnvironment() : this.environment;
@@ -116,8 +118,8 @@ public class TraceRootConfigImpl implements TraceRootConfig {
       return this;
     }
 
-    public Builder awsRegion(String awsRegion) {
-      config.awsRegion = awsRegion;
+    public Builder region(String region) {
+      config.region = region;
       return this;
     }
 
@@ -243,12 +245,12 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   }
 
   @Override
-  public String getAwsRegion() {
-    return awsRegion;
+  public String getRegion() {
+    return region;
   }
 
-  public void setAwsRegion(String awsRegion) {
-    this.awsRegion = awsRegion;
+  public void setRegion(String region) {
+    this.region = region;
   }
 
   @Override

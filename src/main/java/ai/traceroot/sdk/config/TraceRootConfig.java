@@ -24,8 +24,8 @@ public interface TraceRootConfig {
   // Provider Configuration
   Provider getProvider();
 
-  // AWS Configuration
-  String getAwsRegion();
+  // Provider Region Configuration
+  String getRegion();
 
   // OpenTelemetry Configuration
   String getOtlpEndpoint();
