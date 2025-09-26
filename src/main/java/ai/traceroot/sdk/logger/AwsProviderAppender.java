@@ -33,7 +33,7 @@ public class AwsProviderAppender implements ProviderAppender {
 
       cloudWatchAppender.setLogGroupName(logGroupName);
       cloudWatchAppender.setLogStreamName(logStreamName);
-      cloudWatchAppender.setRegion(config.getAwsRegion());
+      cloudWatchAppender.setRegion(config.getRegion());
       cloudWatchAppender.setName("CloudWatchAppender");
 
       cloudWatchAppender.start();
