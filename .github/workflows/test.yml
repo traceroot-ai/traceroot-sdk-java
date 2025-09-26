@@ -1,54 +1,54 @@
 name: Test Java Package and Examples
 
-on:
+'on':
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
-        
-    - name: Build Java package
-      run: mvn clean install -Dgpg.skip=true
-      
-    - name: Run standalone example
-      run: |
-        cd examples/standalone-example
-        timeout 30s mvn clean compile exec:java || exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-          echo "Standalone example ran successfully (terminated after 30s timeout as expected)"
-          exit 0
-        elif [ $exit_code -eq 0 ]; then
-          echo "Standalone example completed successfully"
-          exit 0
-        else
-          echo "Standalone example failed with exit code: $exit_code"
-          exit $exit_code
-        fi
-        
-    - name: Verify build artifacts
-      run: |
-        echo "Checking for build artifacts..."
-        ls -la target/
-        echo "Main JAR file:"
-        ls -la target/*.jar | grep -v javadoc | grep -v sources || echo "No main JAR found"
-        echo "Build verification completed"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build Java package
+        run: mvn clean install -Dgpg.skip=true
+
+      - name: Run standalone example
+        run: |
+          cd examples/standalone-example
+          timeout 30s mvn clean compile exec:java || exit_code=$?
+          if [ $exit_code -eq 124 ]; then
+            echo "Standalone example ran successfully (terminated after 30s timeout as expected)"
+            exit 0
+          elif [ $exit_code -eq 0 ]; then
+            echo "Standalone example completed successfully"
+            exit 0
+          else
+            echo "Standalone example failed with exit code: $exit_code"
+            exit $exit_code
+          fi
+
+      - name: Verify build artifacts
+        run: |
+          echo "Checking for build artifacts..."
+          ls -la target/
+          echo "Main JAR file:"
+          ls -la target/*.jar | grep -v javadoc | grep -v sources || echo "No main JAR found"
+          echo "Build verification completed"
