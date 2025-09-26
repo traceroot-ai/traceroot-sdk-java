@@ -2,6 +2,7 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.utils.ProviderValidationUtils;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import java.util.Map;
@@ -120,18 +121,11 @@ public class TraceRootLogger {
         // Add appender to root logger
         Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         rootLogger.addAppender(providerAppender);
-
-        System.out.println(
-            "[TraceRoot] Successfully configured " + config.getProvider() + " cloud appender");
       } else {
         System.err.println(
             "[TraceRoot] Failed to create appender for provider: " + config.getProvider());
 
-        // For AWS provider, check if credentials are missing
-        if (config.getProvider() == ai.traceroot.sdk.types.Provider.AWS
-            && config.getAwsCredentials() == null) {
-          System.err.println("[TraceRoot] AWS provider selected but credentials not available");
-        }
+        ProviderValidationUtils.validateProviderCredentials(config);
       }
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup provider cloud appender: " + e.getMessage());
