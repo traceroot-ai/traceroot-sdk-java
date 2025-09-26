@@ -263,8 +263,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   private String ensureLogsetExists(ClsClient client, TencentCredentials credentials)
       throws Exception {
-    String logsetName =
-        credentials.getLogset() != null ? credentials.getLogset() : "traceroot-logset";
+    String logsetName = credentials.getLogset() != null ? credentials.getLogset() : "traceroot";
 
     // Check if logset already exists
     DescribeLogsetsRequest request = new DescribeLogsetsRequest();

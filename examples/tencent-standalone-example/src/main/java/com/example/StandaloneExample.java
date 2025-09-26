@@ -58,12 +58,10 @@ public class StandaloneExample {
             .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
             .provider(Provider.TENCENT) // Use Tencent Cloud provider
-            .region("ap-guangzhou") // Tencent Cloud region (default)
             .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for Tencent CLS export
-            .localMode(false) // Enable for local development
             .logLevel(LogLevel.INFO)
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
