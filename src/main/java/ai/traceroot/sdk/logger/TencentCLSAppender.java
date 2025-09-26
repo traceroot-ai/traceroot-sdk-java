@@ -39,7 +39,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   @Override
   public void start() {
-    System.out.println("[TraceRoot] DEBUG: TencentCLSAppender.start() called");
 
     if (config == null) {
       String error = "TraceRoot config not set";
@@ -48,17 +47,9 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       return;
     }
 
-    System.out.println(
-        "[TraceRoot] DEBUG: Config found, enableLogCloudExport=" + config.isEnableLogCloudExport());
-    System.out.println("[TraceRoot] DEBUG: Provider=" + config.getProvider());
-    System.out.println(
-        "[TraceRoot] DEBUG: TencentCredentials="
-            + (config.getTencentCredentials() != null ? "present" : "null"));
-
     if (!config.isEnableLogCloudExport()) {
       String info = "Tencent CLS logging disabled - appender will not start";
       addInfo(info);
-      System.out.println("[TraceRoot] DEBUG: " + info);
       return;
     }
 
@@ -70,19 +61,15 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       String success =
           "Tencent CLS appender started successfully with topic=" + topic + ", region=" + region;
       addInfo(success);
-      System.out.println("[TraceRoot] " + success);
     } catch (Exception e) {
       String error = "Failed to start Tencent CLS appender: " + e.getMessage();
       addError(error, e);
       System.err.println("[TraceRoot] " + error);
-      e.printStackTrace();
     }
   }
 
   @Override
   public void stop() {
-    System.out.println(
-        "[TraceRoot] DEBUG: TencentCLSAppender.stop() called, flushing remaining logs");
 
     if (scheduler != null) {
       scheduler.shutdown();
@@ -97,14 +84,12 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     }
 
     // Flush remaining logs
-    System.out.println("[TraceRoot] DEBUG: Final flush, queue size: " + logEventQueue.size());
     flushLogs();
 
     // Close CLS client
     if (clsClient != null) {
       try {
         clsClient.close();
-        System.out.println("[TraceRoot] DEBUG: CLS client closed successfully");
       } catch (Exception e) {
         System.err.println("[TraceRoot] Error closing CLS client: " + e.getMessage());
       }
@@ -112,7 +97,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
     super.stop();
     addInfo("Tencent CLS appender stopped");
-    System.out.println("[TraceRoot] DEBUG: TencentCLSAppender stopped");
   }
 
   @Override
@@ -126,8 +110,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
     // Add event to queue for batch processing
     logEventQueue.offer(event);
-    System.out.println(
-        "[TraceRoot] DEBUG: Added log to queue, queue size: " + logEventQueue.size());
   }
 
   private void initializeCLSClient() throws Exception {
@@ -169,14 +151,8 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     // Update the topic with actual topic ID
     if (credentials.getTopic() == null) {
       credentials.setTopic(actualTopicId);
-      System.out.println(
-          "[TraceRoot] DEBUG: Updated credentials with created topic ID: " + actualTopicId);
     } else {
-      System.out.println(
-          "[TraceRoot] DEBUG: Using existing topic ID from credentials: " + credentials.getTopic());
     }
-
-    System.out.println("[TraceRoot] DEBUG: CLS client initialized with endpoint: " + endpoint);
   }
 
   private String ensureTopicExists(TencentCredentials credentials) throws Exception {
@@ -195,8 +171,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     // If topic ID is already provided, verify it exists
     if (credentials.getTopic() != null && !credentials.getTopic().isEmpty()) {
       if (topicExists(clsClient, credentials.getTopic())) {
-        System.out.println(
-            "[TraceRoot] DEBUG: Topic " + credentials.getTopic() + " already exists");
         return credentials.getTopic();
       }
     }
@@ -209,14 +183,11 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     String existingTopicId = findExistingTopicByName(clsClient, logsetId, topicName);
 
     if (existingTopicId != null) {
-      System.out.println(
-          "[TraceRoot] DEBUG: Found existing topic: " + topicName + " with ID: " + existingTopicId);
       return existingTopicId;
     }
 
     // Create topic if it doesn't exist
     String topicId = createTopic(clsClient, logsetId, topicName);
-    System.out.println("[TraceRoot] DEBUG: Created topic: " + topicName + " with ID: " + topicId);
     return topicId;
   }
 
@@ -275,8 +246,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     DescribeLogsetsResponse response = client.DescribeLogsets(request);
     if (response.getLogsets() != null && response.getLogsets().length > 0) {
       String logsetId = response.getLogsets()[0].getLogsetId();
-      System.out.println(
-          "[TraceRoot] DEBUG: Using existing logset: " + logsetName + " with ID: " + logsetId);
       return logsetId;
     }
 
@@ -290,8 +259,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
     CreateLogsetResponse createResponse = client.CreateLogset(createRequest);
     String logsetId = createResponse.getLogsetId();
-    System.out.println(
-        "[TraceRoot] DEBUG: Created logset: " + logsetName + " with ID: " + logsetId);
     return logsetId;
   }
 
@@ -326,9 +293,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       return;
     }
 
-    System.out.println(
-        "[TraceRoot] DEBUG: flushLogs() called, queue size: " + logEventQueue.size());
-
     // Process all events in the queue
     List<LogItem> logItems = new ArrayList<>();
     ILoggingEvent event;
@@ -346,33 +310,18 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       return;
     }
 
-    System.out.println("[TraceRoot] DEBUG: Sending " + logItems.size() + " logs to Tencent CLS");
-
     // Send logs using CLS SDK - topic should be the topic ID
     String topicId =
         config.getTencentCredentials().getTopic() != null
             ? config.getTencentCredentials().getTopic()
             : topic;
 
-    System.out.println("[TraceRoot] DEBUG: Using topic ID for logging: " + topicId);
-    System.out.println("[TraceRoot] DEBUG: Log items count: " + logItems.size());
-    System.out.println(
-        "[TraceRoot] DEBUG: First log item preview: "
-            + (logItems.isEmpty() ? "none" : "log item created"));
-
     try {
       clsClient.putLogs(
           topicId,
           logItems,
           result -> {
-            System.out.println(
-                "[TraceRoot] DEBUG: Callback received - isSuccessful: " + result.isSuccessful());
             if (result.isSuccessful()) {
-              System.out.println(
-                  "[TraceRoot] Successfully sent "
-                      + logItems.size()
-                      + " log events to Tencent CLS topic: "
-                      + topicId);
               processedLogs.addAndGet(logItems.size());
             } else {
               System.err.println(
@@ -381,8 +330,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
               addError("Failed to send logs to Tencent CLS: " + result.getErrorMessage());
             }
           });
-      System.out.println(
-          "[TraceRoot] DEBUG: putLogs() call completed, waiting for async callback...");
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       System.err.println(
@@ -390,7 +337,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       addError("Interrupted while sending logs to Tencent CLS: " + e.getMessage());
     } catch (Exception e) {
       System.err.println("[TraceRoot] Error sending logs to Tencent CLS: " + e.getMessage());
-      e.printStackTrace();
       addError("Error sending logs to Tencent CLS: " + e.getMessage());
     }
   }
