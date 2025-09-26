@@ -2,6 +2,7 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.TencentCredentials;
+import ai.traceroot.sdk.utils.LogAppenderUtils;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.tencentcloudapi.cls.producer.AsyncProducerClient;
@@ -13,9 +14,6 @@ import com.tencentcloudapi.cls.v20201016.models.*;
 import com.tencentcloudapi.common.Credential;
 import com.tencentcloudapi.common.profile.ClientProfile;
 import com.tencentcloudapi.common.profile.HttpProfile;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanContext;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,18 +68,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   @Override
   public void stop() {
-
-    if (scheduler != null) {
-      scheduler.shutdown();
-      try {
-        if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
-          scheduler.shutdownNow();
-        }
-      } catch (InterruptedException e) {
-        scheduler.shutdownNow();
-        Thread.currentThread().interrupt();
-      }
-    }
+    LogAppenderUtils.shutdownScheduler(scheduler, 10);
 
     // Flush remaining logs
     flushLogs();
@@ -276,16 +263,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   }
 
   private void startBatchProcessor() {
-    scheduler =
-        Executors.newSingleThreadScheduledExecutor(
-            r -> {
-              Thread t = new Thread(r, "tencent-cls-appender");
-              t.setDaemon(true);
-              return t;
-            });
-
-    // Schedule regular flushing every 2 seconds
-    scheduler.scheduleAtFixedRate(this::flushLogs, 2, 2, TimeUnit.SECONDS);
+    scheduler = LogAppenderUtils.createBatchProcessor("tencent-cls-appender", this::flushLogs, 2);
   }
 
   private void flushLogs() {
@@ -346,60 +324,16 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     int timestamp = (int) (event.getTimeStamp() / 1000);
     LogItem logItem = new LogItem(timestamp);
 
-    // Add all the structured log data as LogContent
-    addLogContent(
-        logItem,
-        "service_name",
-        config.getServiceName() != null ? config.getServiceName() : "tencent-standalone-app");
+    // Get common log metadata from utils
+    Map<String, Object> baseMetadata = LogAppenderUtils.createBaseLogMetadata(event, config);
 
-    addLogContent(
-        logItem,
-        "github_commit_hash",
-        config.getGithubCommitHash() != null ? config.getGithubCommitHash() : "main");
+    // Add trace correlation (Tencent format - no AWS X-Ray formatting)
+    LogAppenderUtils.addTraceCorrelation(baseMetadata, false);
 
-    addLogContent(
-        logItem,
-        "github_owner",
-        config.getGithubOwner() != null ? config.getGithubOwner() : "traceroot-ai");
-
-    addLogContent(
-        logItem,
-        "github_repo_name",
-        config.getGithubRepoName() != null ? config.getGithubRepoName() : "traceroot-sdk-java");
-
-    addLogContent(
-        logItem,
-        "environment",
-        config.getEnvironment() != null ? config.getEnvironment() : "development");
-
-    // Add MDC context if available
-    Map<String, String> mdc = event.getMDCPropertyMap();
-    if (mdc != null && !mdc.isEmpty()) {
-      String requestId = mdc.get("requestId");
-      if (requestId != null) {
-        addLogContent(logItem, "requestId", requestId);
-      }
+    // Convert all metadata to LogContent entries
+    for (Map.Entry<String, Object> entry : baseMetadata.entrySet()) {
+      addLogContent(logItem, entry.getKey(), entry.getValue().toString());
     }
-
-    // Add stack trace
-    String stackTrace = getCallerStackTrace(event);
-    addLogContent(logItem, "stack_trace", stackTrace);
-
-    // Add log level
-    addLogContent(logItem, "level", event.getLevel().toString().toLowerCase());
-
-    // Add message
-    addLogContent(logItem, "message", event.getFormattedMessage());
-
-    // Add formatted timestamp
-    Instant instant = Instant.ofEpochMilli(event.getTimeStamp());
-    java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneId.systemDefault());
-    String formattedTimestamp =
-        zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS"));
-    addLogContent(logItem, "timestamp", formattedTimestamp);
-
-    // Add trace correlation
-    addTraceCorrelation(logItem);
 
     return logItem;
   }
@@ -408,92 +342,6 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
     if (value != null) {
       logItem.PushBack(new LogContent(key, value));
     }
-  }
-
-  private void addTraceCorrelation(LogItem logItem) {
-    Span span = Span.current();
-    if (span != null) {
-      SpanContext spanContext = span.getSpanContext();
-      if (spanContext.isValid()
-          && !spanContext.getTraceId().equals("00000000000000000000000000000000")) {
-        addLogContent(logItem, "trace_id", spanContext.getTraceId());
-        addLogContent(logItem, "span_id", spanContext.getSpanId());
-      } else {
-        addLogContent(logItem, "trace_id", "no-trace");
-        addLogContent(logItem, "span_id", "no-span");
-      }
-    } else {
-      addLogContent(logItem, "trace_id", "no-trace");
-      addLogContent(logItem, "span_id", "no-span");
-    }
-  }
-
-  private String getCallerStackTrace(ILoggingEvent event) {
-    StackTraceElement[] callerData = event.getCallerData();
-    if (callerData != null && callerData.length > 0) {
-      StackTraceElement caller = findActualCaller(callerData);
-      if (caller != null) {
-        String methodName = caller.getMethodName();
-        int lineNumber = caller.getLineNumber();
-
-        // Clean up AspectJ synthetic method names
-        if (methodName.contains("_aroundBody")) {
-          methodName = methodName.replaceAll("_aroundBody\\d*", "");
-        }
-
-        String filePath = getFilePath(caller);
-
-        // Apply root path transformation if configured
-        if (config != null
-            && config.getRootPath() != null
-            && filePath.startsWith(config.getRootPath())) {
-          filePath = filePath.substring(config.getRootPath().length());
-          if (filePath.startsWith("/")) {
-            filePath = filePath.substring(1);
-          }
-        }
-
-        return String.format("%s:%s:%d", filePath, methodName, lineNumber);
-      }
-    }
-    return "Unknown:unknown:0";
-  }
-
-  private StackTraceElement findActualCaller(StackTraceElement[] callerData) {
-    for (StackTraceElement element : callerData) {
-      String className = element.getClassName();
-      if (!className.contains("TraceRootLogger")
-          && !className.contains("LoggerFactory")
-          && !className.contains("Logger")
-          && !className.startsWith("org.slf4j")
-          && !className.startsWith("ch.qos.logback")
-          && !className.startsWith("java.util.concurrent")
-          && !className.startsWith("java.lang.Thread")) {
-        return element;
-      }
-    }
-    return callerData.length > 0 ? callerData[0] : null;
-  }
-
-  private String getFilePath(StackTraceElement caller) {
-    String className = caller.getClassName();
-    String fileName = caller.getFileName();
-
-    if (fileName == null) {
-      String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-      fileName = simpleClassName + ".java";
-    }
-
-    // Convert package to path
-    String packagePath = className.replace('.', '/');
-    int lastSlash = packagePath.lastIndexOf('/');
-    if (lastSlash >= 0) {
-      packagePath = packagePath.substring(0, lastSlash + 1) + fileName;
-    } else {
-      packagePath = fileName;
-    }
-
-    return packagePath;
   }
 
   // Setters for configuration

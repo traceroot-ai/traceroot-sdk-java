@@ -2,13 +2,11 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.AwsCredentials;
+import ai.traceroot.sdk.utils.LogAppenderUtils;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanContext;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,17 +70,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   @Override
   public void stop() {
-    if (scheduler != null) {
-      scheduler.shutdown();
-      try {
-        if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
-          scheduler.shutdownNow();
-        }
-      } catch (InterruptedException e) {
-        scheduler.shutdownNow();
-        Thread.currentThread().interrupt();
-      }
-    }
+    LogAppenderUtils.shutdownScheduler(scheduler, 10);
 
     // Flush remaining logs
     flushLogs();
@@ -231,15 +219,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
   private void startBatchProcessor() {
     scheduler =
-        Executors.newSingleThreadScheduledExecutor(
-            r -> {
-              Thread t = new Thread(r, "cloudwatch-log-appender");
-              t.setDaemon(true);
-              return t;
-            });
-
-    scheduler.scheduleAtFixedRate(
-        this::flushLogs, flushIntervalSeconds, flushIntervalSeconds, TimeUnit.SECONDS);
+        LogAppenderUtils.createBatchProcessor(
+            "cloudwatch-log-appender", this::flushLogs, flushIntervalSeconds);
   }
 
   private void flushLogs() {
@@ -314,228 +295,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   }
 
   private Map<String, Object> createLogData(ILoggingEvent event) {
-    // Use LinkedHashMap to preserve field order
-    Map<String, Object> logData = new LinkedHashMap<>();
+    // Get common log metadata from utils
+    Map<String, Object> logData = LogAppenderUtils.createBaseLogMetadata(event, config);
 
-    // Follow exact field order from expected format
-    // 1. service_name
-    if (config != null) {
-      logData.put(
-          "service_name",
-          config.getServiceName() != null ? config.getServiceName() : "standalone-java-app");
-    } else {
-      logData.put("service_name", "standalone-java-app");
-    }
-
-    // 2. github_commit_hash
-    if (config != null) {
-      logData.put(
-          "github_commit_hash",
-          config.getGithubCommitHash() != null ? config.getGithubCommitHash() : "main");
-    } else {
-      logData.put("github_commit_hash", "main");
-    }
-
-    // 3. github_owner
-    if (config != null) {
-      logData.put(
-          "github_owner",
-          config.getGithubOwner() != null ? config.getGithubOwner() : "traceroot-ai");
-    } else {
-      logData.put("github_owner", "traceroot-ai");
-    }
-
-    // 4. github_repo_name
-    if (config != null) {
-      logData.put(
-          "github_repo_name",
-          config.getGithubRepoName() != null ? config.getGithubRepoName() : "traceroot-sdk-java");
-    } else {
-      logData.put("github_repo_name", "traceroot-sdk-java");
-    }
-
-    // 5. environment
-    if (config != null) {
-      logData.put(
-          "environment", config.getEnvironment() != null ? config.getEnvironment() : "development");
-    } else {
-      logData.put("environment", "development");
-    }
-
-    Map<String, String> mdc = event.getMDCPropertyMap();
-
-    // 6. requestId (from MDC if available)
-    if (mdc != null && !mdc.isEmpty()) {
-      String requestId = mdc.get("requestId");
-      if (requestId != null) {
-        logData.put("requestId", requestId);
-      }
-    }
-
-    // 7. stack_trace
-    String stackTrace = getCallerStackTrace(event);
-    logData.put("stack_trace", stackTrace);
-
-    // 8. level (lowercase)
-    logData.put("level", event.getLevel().toString().toLowerCase());
-
-    // 9. message
-    logData.put("message", event.getFormattedMessage());
-
-    // 10. timestamp (in format: "2025-09-17 15:05:14,717")
-    Instant instant = Instant.ofEpochMilli(event.getTimeStamp());
-    java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneId.systemDefault());
-    String timestamp =
-        zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS"));
-    logData.put("timestamp", timestamp);
-
-    // 11. trace_id and span_id
-    Span span = Span.current();
-    if (span != null) {
-      SpanContext spanContext = span.getSpanContext();
-      if (spanContext.isValid()
-          && !spanContext.getTraceId().equals("00000000000000000000000000000000")) {
-        // Format trace_id in AWS X-Ray format: "1-{first 8 chars}-{remaining 24 chars}"
-        String traceIdHex = spanContext.getTraceId();
-        String formattedTraceId =
-            String.format("1-%s-%s", traceIdHex.substring(0, 8), traceIdHex.substring(8));
-        logData.put("trace_id", formattedTraceId);
-        logData.put("span_id", spanContext.getSpanId());
-      } else {
-        logData.put("trace_id", "no-trace");
-        logData.put("span_id", "no-span");
-      }
-    } else {
-      logData.put("trace_id", "no-trace");
-      logData.put("span_id", "no-span");
-    }
+    // Add trace correlation with AWS X-Ray formatting
+    LogAppenderUtils.addTraceCorrelation(logData, true);
 
     return logData;
-  }
-
-  private String getCallerStackTrace(ILoggingEvent event) {
-    StackTraceElement[] callerData = event.getCallerData();
-    if (callerData != null && callerData.length > 0) {
-      // Find the actual calling code, skipping logger framework frames
-      StackTraceElement caller = findActualCaller(callerData);
-      if (caller != null) {
-        String methodName = caller.getMethodName();
-        int lineNumber = caller.getLineNumber();
-        String fileName = caller.getFileName();
-
-        // Clean up AspectJ synthetic method names (remove _aroundBodyN suffixes)
-        if (methodName.contains("_aroundBody")) {
-          methodName = methodName.replaceAll("_aroundBody\\d*", "");
-        }
-
-        // Get the file path - try to construct absolute path or use class-based path
-        String filePath = getFilePath(caller);
-
-        // Apply root path transformation if configured
-        if (config != null
-            && config.getRootPath() != null
-            && filePath.startsWith(config.getRootPath())) {
-          filePath = filePath.substring(config.getRootPath().length());
-          // Remove leading slash if present
-          if (filePath.startsWith("/")) {
-            filePath = filePath.substring(1);
-          }
-        }
-
-        return String.format("%s:%s:%d", filePath, methodName, lineNumber);
-      }
-    }
-    return "Unknown:unknown:0";
-  }
-
-  private StackTraceElement findActualCaller(StackTraceElement[] callerData) {
-    // Skip logger framework classes to find the actual calling code
-    for (StackTraceElement element : callerData) {
-      String className = element.getClassName();
-      // Skip TraceRootLogger, LoggerFactory, and other logging framework classes
-      if (!className.contains("TraceRootLogger")
-          && !className.contains("LoggerFactory")
-          && !className.contains("Logger")
-          && !className.startsWith("org.slf4j")
-          && !className.startsWith("ch.qos.logback")
-          && !className.startsWith("java.util.concurrent")
-          && !className.startsWith("java.lang.Thread")) {
-        return element;
-      }
-    }
-    // Fallback to the first element if we can't find a better one
-    return callerData.length > 0 ? callerData[0] : null;
-  }
-
-  private String getFilePath(StackTraceElement caller) {
-    String className = caller.getClassName();
-    String fileName = caller.getFileName();
-
-    if (fileName == null) {
-      // Fallback to constructed filename from class name
-      String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-      fileName = simpleClassName + ".java";
-    }
-
-    // Try to find the actual source file path
-    String actualFilePath = findActualSourceFile(className, fileName);
-
-    // If we have a root path and found the actual file, remove the root path
-    if (config != null && config.getRootPath() != null && actualFilePath != null) {
-      if (actualFilePath.startsWith(config.getRootPath())) {
-        String relativePath = actualFilePath.substring(config.getRootPath().length());
-        if (relativePath.startsWith("/")) {
-          relativePath = relativePath.substring(1);
-        }
-        return relativePath;
-      }
-    }
-
-    // Fallback to package-based path if actual file not found
-    String packagePath = className.replace('.', '/');
-    int lastSlash = packagePath.lastIndexOf('/');
-    if (lastSlash >= 0) {
-      packagePath = packagePath.substring(0, lastSlash + 1) + fileName;
-    } else {
-      packagePath = fileName;
-    }
-
-    return packagePath;
-  }
-
-  private String findActualSourceFile(String className, String fileName) {
-    try {
-      // Try to get the actual source file location from the class
-      Class<?> clazz = Class.forName(className);
-      java.security.CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
-      if (codeSource != null) {
-        java.net.URL location = codeSource.getLocation();
-        if (location != null) {
-          String classPath = location.getPath();
-
-          // If it's a .class file in target/classes, try to find corresponding source
-          if (classPath.contains("/target/classes")) {
-            String sourcePath = classPath.replace("/target/classes", "/src/main/java");
-            String packagePath = className.replace('.', '/');
-            int lastSlash = packagePath.lastIndexOf('/');
-            if (lastSlash >= 0) {
-              packagePath = packagePath.substring(0, lastSlash + 1) + fileName;
-            } else {
-              packagePath = fileName;
-            }
-            String fullSourcePath = sourcePath + "/" + packagePath;
-
-            java.io.File sourceFile = new java.io.File(fullSourcePath);
-            if (sourceFile.exists()) {
-              return sourceFile.getAbsolutePath();
-            }
-          }
-        }
-      }
-    } catch (Exception e) {
-      // Ignore errors, fallback to package path
-    }
-    return null;
   }
 
   // Setters for configuration
