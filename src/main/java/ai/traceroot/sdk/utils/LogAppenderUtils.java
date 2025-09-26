@@ -60,13 +60,44 @@ public class LogAppenderUtils {
   public static StackTraceElement findActualCaller(StackTraceElement[] callerData) {
     for (StackTraceElement element : callerData) {
       String className = element.getClassName();
+      String methodName = element.getMethodName();
       if (!className.contains("TraceRootLogger")
+          && !className.contains("TraceRootTracer")
           && !className.contains("LoggerFactory")
           && !className.contains("Logger")
           && !className.startsWith("org.slf4j")
           && !className.startsWith("ch.qos.logback")
           && !className.startsWith("java.util.concurrent")
-          && !className.startsWith("java.lang.Thread")) {
+          && !className.startsWith("java.lang.Thread")
+          && !className.startsWith("ai.traceroot.sdk.tracer")
+          && !className.startsWith("ai.traceroot.sdk.logger")
+          && !className.startsWith("ai.traceroot.sdk.utils")
+          && !methodName.equals("getStackTrace")) {
+        return element;
+      }
+    }
+    return callerData.length > 0 ? callerData[0] : null;
+  }
+
+  /**
+   * Find the user's logging location, more permissive for direct logging calls
+   *
+   * @param callerData Array of stack trace elements
+   * @return The user's logging location
+   */
+  public static StackTraceElement findUserLoggingLocation(StackTraceElement[] callerData) {
+    for (StackTraceElement element : callerData) {
+      String className = element.getClassName();
+      String methodName = element.getMethodName();
+      if (!className.contains("TraceRootLogger")
+          && !className.contains("LoggerFactory")
+          && !className.startsWith("org.slf4j")
+          && !className.startsWith("ch.qos.logback")
+          && !className.startsWith("java.lang.Thread")
+          && !className.startsWith("ai.traceroot.sdk.logger")
+          && !className.startsWith("ai.traceroot.sdk.utils")
+          && !methodName.equals("getStackTrace")
+          && !methodName.equals("logWithTraceCorrelation")) {
         return element;
       }
     }
@@ -77,7 +108,7 @@ public class LogAppenderUtils {
    * Construct file path from StackTraceElement
    *
    * @param caller The stack trace element
-   * @return File path string
+   * @return File path string (absolute path, to be made relative by root path transformation)
    */
   public static String getFilePath(StackTraceElement caller) {
     String className = caller.getClassName();
@@ -88,7 +119,10 @@ public class LogAppenderUtils {
       fileName = simpleClassName + ".java";
     }
 
-    // Convert package to path
+    // Get the current working directory as absolute path
+    String workingDir = System.getProperty("user.dir");
+
+    // Convert package to path and construct absolute path
     String packagePath = className.replace('.', '/');
     int lastSlash = packagePath.lastIndexOf('/');
     if (lastSlash >= 0) {
@@ -97,7 +131,19 @@ public class LogAppenderUtils {
       packagePath = fileName;
     }
 
-    return packagePath;
+    // Construct absolute path: workingDir + /src/main/java/ + packagePath
+    String absolutePath = workingDir + "/src/main/java/" + packagePath;
+
+    // Normalize the path and return absolute path
+    // The root path transformation in the caller will make it relative
+    try {
+      absolutePath = new java.io.File(absolutePath).getCanonicalPath().replace('\\', '/');
+    } catch (Exception e) {
+      // If canonical path fails, just use the constructed path
+      absolutePath = absolutePath.replace('\\', '/');
+    }
+
+    return absolutePath;
   }
 
   /**
@@ -173,8 +219,16 @@ public class LogAppenderUtils {
       }
     }
 
-    // Stack trace
-    logData.put("stack_trace", getCallerStackTrace(event, config));
+    // Stack trace - prefer MDC value captured at log creation time
+    String stackTrace = null;
+    if (mdc != null) {
+      stackTrace = mdc.get("traceroot.stack_trace");
+    }
+    if (stackTrace == null) {
+      // Fallback to extracting from caller data (for non-TraceRootLogger logs)
+      stackTrace = getCallerStackTrace(event, config);
+    }
+    logData.put("stack_trace", stackTrace);
 
     // Log level
     logData.put("level", event.getLevel().toString().toLowerCase());

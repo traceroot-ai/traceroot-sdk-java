@@ -2,6 +2,7 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.utils.LogAppenderUtils;
 import ai.traceroot.sdk.utils.ProviderValidationUtils;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -96,7 +97,6 @@ public class TraceRootLogger {
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
-      e.printStackTrace();
     }
 
     // Update all existing logger instances with the new config
@@ -259,9 +259,49 @@ public class TraceRootLogger {
       System.out.println("[TraceRoot Local] Logging in local mode");
     }
 
-    // The trace correlation will be automatically handled by TraceCorrelationConverter
-    // in the Logback configuration
-    logAction.run();
+    // Capture stack trace at log creation time (not processing time)
+    String originalStackTrace = MDC.get("traceroot.stack_trace");
+    try {
+      // Always capture stack trace for user logger calls
+      StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+      StackTraceElement caller = LogAppenderUtils.findUserLoggingLocation(stackTrace);
+
+      if (caller != null) {
+        String methodName = caller.getMethodName();
+        int lineNumber = caller.getLineNumber();
+
+        // Clean up AspectJ synthetic method names
+        if (methodName.contains("_aroundBody")) {
+          methodName = methodName.replaceAll("_aroundBody\\d*", "");
+        }
+
+        String filePath = LogAppenderUtils.getFilePath(caller);
+
+        // Apply root path transformation if configured
+        if (config != null
+            && config.getRootPath() != null
+            && filePath.startsWith(config.getRootPath())) {
+          filePath = filePath.substring(config.getRootPath().length());
+          if (filePath.startsWith("/")) {
+            filePath = filePath.substring(1);
+          }
+        }
+
+        String stackTraceInfo = String.format("%s:%s:%d", filePath, methodName, lineNumber);
+        MDC.put("traceroot.stack_trace", stackTraceInfo);
+      }
+
+      // The trace correlation will be automatically handled by TraceCorrelationConverter
+      // in the Logback configuration
+      logAction.run();
+    } finally {
+      // Restore original stack trace or remove if it wasn't set
+      if (originalStackTrace != null) {
+        MDC.put("traceroot.stack_trace", originalStackTrace);
+      } else {
+        MDC.remove("traceroot.stack_trace");
+      }
+    }
   }
 
   // Delegate methods for compatibility
