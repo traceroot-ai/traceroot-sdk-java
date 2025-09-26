@@ -47,7 +47,7 @@ public class StandaloneExample {
   private static void initializeTraceRoot() {
     // Create configuration to match expected output format
     TraceRootConfigImpl config =
-        TraceRootConfigImpl.builder()
+        TraceRootConfigImpl.builderWithEnvDefaults()
             .serviceName("standalone-java-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")

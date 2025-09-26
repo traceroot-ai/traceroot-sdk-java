@@ -26,7 +26,7 @@ public class App {
   @EventListener(ApplicationReadyEvent.class)
   public void initializeTraceRoot() {
     TraceRootConfigImpl config =
-        TraceRootConfigImpl.builder()
+        TraceRootConfigImpl.builderWithEnvDefaults()
             .serviceName("minitasks-spring-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")

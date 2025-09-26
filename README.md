@@ -24,6 +24,8 @@ In the root directory, run:
 mvn clean install -Dgpg.skip=true
 export TRACEROOT_TOKEN=your_token
 export TRACEROOT_ROOT_PATH=your_absolute_path_to_git_repo
+# Optional: aws (default) or tencent
+export TRACEROOT_PROVIDER=aws
 cd examples/spring-boot-example
 mvn spring-boot:run
 ```

@@ -1,7 +1,9 @@
 package ai.traceroot.sdk.config;
 
+import ai.traceroot.sdk.constants.TraceRootConstants;
 import ai.traceroot.sdk.types.AwsCredentials;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.types.Provider;
 
 public class TraceRootConfigImpl implements TraceRootConfig {
   private String serviceName;
@@ -10,6 +12,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   private String githubCommitHash;
   private String token;
   private String name;
+  private Provider provider = Provider.AWS;
   private String awsRegion = "us-west-2";
   private String otlpEndpoint = "http://localhost:4318/v1/traces";
   private String environment = "development";
@@ -39,6 +42,7 @@ public class TraceRootConfigImpl implements TraceRootConfig {
         config.getGithubCommitHash() != null ? config.getGithubCommitHash() : "unknown";
     this.token = config.getToken();
     this.name = config.getName();
+    this.provider = config.getProvider() != null ? config.getProvider() : this.provider;
     this.awsRegion = config.getAwsRegion() != null ? config.getAwsRegion() : this.awsRegion;
     this.otlpEndpoint =
         config.getOtlpEndpoint() != null ? config.getOtlpEndpoint() : this.otlpEndpoint;
@@ -59,6 +63,19 @@ public class TraceRootConfigImpl implements TraceRootConfig {
   // Builder pattern for easy configuration
   public static Builder builder() {
     return new Builder();
+  }
+
+  // Builder with environment variable defaults
+  public static Builder builderWithEnvDefaults() {
+    Builder builder = new Builder();
+
+    // Set provider from environment variable
+    String providerEnv = System.getenv(TraceRootConstants.ENV_PROVIDER);
+    if (providerEnv != null) {
+      builder.provider(Provider.fromString(providerEnv));
+    }
+
+    return builder;
   }
 
   public static class Builder {
@@ -91,6 +108,11 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
     public Builder name(String name) {
       config.name = name;
+      return this;
+    }
+
+    public Builder provider(Provider provider) {
+      config.provider = provider;
       return this;
     }
 
@@ -209,6 +231,15 @@ public class TraceRootConfigImpl implements TraceRootConfig {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  @Override
+  public Provider getProvider() {
+    return provider;
+  }
+
+  public void setProvider(Provider provider) {
+    this.provider = provider;
   }
 
   @Override
