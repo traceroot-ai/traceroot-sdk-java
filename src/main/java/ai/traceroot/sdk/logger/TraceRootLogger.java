@@ -283,13 +283,8 @@ public class TraceRootLogger {
       StackTraceElement caller = LogAppenderUtils.findUserLoggingLocation(stackTrace);
 
       if (caller != null) {
-        String methodName = caller.getMethodName();
+        String methodName = LogAppenderUtils.cleanAspectJMethodName(caller.getMethodName());
         int lineNumber = caller.getLineNumber();
-
-        // Clean up AspectJ synthetic method names
-        if (methodName.contains("_aroundBody")) {
-          methodName = methodName.replaceAll("_aroundBody\\d*", "");
-        }
 
         String filePath = LogAppenderUtils.getFilePath(caller);
 

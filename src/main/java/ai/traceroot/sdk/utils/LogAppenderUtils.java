@@ -13,6 +13,50 @@ import java.util.concurrent.TimeUnit;
 /** Utility class for shared functionality between log appenders */
 public class LogAppenderUtils {
 
+  /*
+   * MEMORY SAFETY: Stack Trace Filtering Constants
+   *
+   * These constants define method names to exclude when finding the actual user code
+   * in stack traces. Using constants instead of hard-coded strings makes the code:
+   * - More maintainable and refactoring-safe
+   * - Easier to update when method names change
+   * - Self-documenting about what methods are being filtered
+   */
+
+  // Method names to exclude when finding actual caller (framework/logger methods)
+  private static final String METHOD_GET_STACK_TRACE = "getStackTrace";
+  private static final String METHOD_LOG_WITH_TRACE_CORRELATION = "logWithTraceCorrelation";
+
+  // Class name patterns to exclude when finding actual caller
+  private static final String PACKAGE_TRACEROOT_SDK = "ai.traceroot.sdk";
+  private static final String PACKAGE_SLF4J = "org.slf4j";
+  private static final String PACKAGE_LOGBACK = "ch.qos.logback";
+  private static final String PACKAGE_JAVA_CONCURRENT = "java.util.concurrent";
+  private static final String PACKAGE_JAVA_THREAD = "java.lang.Thread";
+
+  // Logger class names to exclude
+  private static final String CLASS_TRACEROOT_LOGGER = "ai.traceroot.sdk.logger.TraceRootLogger";
+  private static final String CLASS_LOGGER_FACTORY = "LoggerFactory";
+  private static final String CLASS_LOGGER = "Logger";
+
+  /**
+   * Clean up AspectJ synthetic method names efficiently
+   *
+   * <p>MEMORY SAFETY: Optimized for high-throughput logging scenarios. Uses simple string
+   * operations instead of expensive regex compilation.
+   *
+   * @param methodName The method name that may contain AspectJ suffixes
+   * @return Cleaned method name without _aroundBody suffixes
+   */
+  public static String cleanAspectJMethodName(String methodName) {
+    // PERFORMANCE: Simple substring operation instead of regex replaceAll
+    int aroundBodyIndex = methodName.indexOf("_aroundBody");
+    if (aroundBodyIndex != -1) {
+      return methodName.substring(0, aroundBodyIndex);
+    }
+    return methodName;
+  }
+
   /**
    * Extract stack trace information from a log event
    *
@@ -25,13 +69,8 @@ public class LogAppenderUtils {
     if (callerData != null && callerData.length > 0) {
       StackTraceElement caller = findActualCaller(callerData);
       if (caller != null) {
-        String methodName = caller.getMethodName();
+        String methodName = cleanAspectJMethodName(caller.getMethodName());
         int lineNumber = caller.getLineNumber();
-
-        // Clean up AspectJ synthetic method names
-        if (methodName.contains("_aroundBody")) {
-          methodName = methodName.replaceAll("_aroundBody\\d*", "");
-        }
 
         String filePath = getFilePath(caller);
 
@@ -61,18 +100,20 @@ public class LogAppenderUtils {
     for (StackTraceElement element : callerData) {
       String className = element.getClassName();
       String methodName = element.getMethodName();
+
+      // MEMORY SAFETY: Use constants for maintainable filtering logic
       if (!className.contains("TraceRootLogger")
           && !className.contains("TraceRootTracer")
-          && !className.contains("LoggerFactory")
-          && !className.contains("Logger")
-          && !className.startsWith("org.slf4j")
-          && !className.startsWith("ch.qos.logback")
-          && !className.startsWith("java.util.concurrent")
-          && !className.startsWith("java.lang.Thread")
-          && !className.startsWith("ai.traceroot.sdk.tracer")
-          && !className.startsWith("ai.traceroot.sdk.logger")
-          && !className.startsWith("ai.traceroot.sdk.utils")
-          && !methodName.equals("getStackTrace")) {
+          && !className.contains(CLASS_LOGGER_FACTORY)
+          && !className.contains(CLASS_LOGGER)
+          && !className.startsWith(PACKAGE_SLF4J)
+          && !className.startsWith(PACKAGE_LOGBACK)
+          && !className.startsWith(PACKAGE_JAVA_CONCURRENT)
+          && !className.startsWith(PACKAGE_JAVA_THREAD)
+          && !className.startsWith(PACKAGE_TRACEROOT_SDK + ".tracer")
+          && !className.startsWith(PACKAGE_TRACEROOT_SDK + ".logger")
+          && !className.startsWith(PACKAGE_TRACEROOT_SDK + ".utils")
+          && !methodName.equals(METHOD_GET_STACK_TRACE)) {
         return element;
       }
     }
@@ -89,15 +130,18 @@ public class LogAppenderUtils {
     for (StackTraceElement element : callerData) {
       String className = element.getClassName();
       String methodName = element.getMethodName();
+
+      // MEMORY SAFETY: Use constants for maintainable filtering logic - more permissive for direct
+      // logging
       if (!className.contains("TraceRootLogger")
-          && !className.contains("LoggerFactory")
-          && !className.startsWith("org.slf4j")
-          && !className.startsWith("ch.qos.logback")
-          && !className.startsWith("java.lang.Thread")
-          && !className.startsWith("ai.traceroot.sdk.logger")
-          && !className.startsWith("ai.traceroot.sdk.utils")
-          && !methodName.equals("getStackTrace")
-          && !methodName.equals("logWithTraceCorrelation")) {
+          && !className.contains(CLASS_LOGGER_FACTORY)
+          && !className.startsWith(PACKAGE_SLF4J)
+          && !className.startsWith(PACKAGE_LOGBACK)
+          && !className.startsWith(PACKAGE_JAVA_THREAD)
+          && !className.startsWith(PACKAGE_TRACEROOT_SDK + ".logger")
+          && !className.startsWith(PACKAGE_TRACEROOT_SDK + ".utils")
+          && !methodName.equals(METHOD_GET_STACK_TRACE)
+          && !methodName.equals(METHOD_LOG_WITH_TRACE_CORRELATION)) {
         return element;
       }
     }
@@ -174,19 +218,21 @@ public class LogAppenderUtils {
     String absolutePath = workingDir + "/src/main/java/" + packagePath;
 
     /*
-     * MEMORY SAFETY: No File System Calls
+     * MEMORY SAFETY: No File System Calls + Optimized String Operations
      *
      * PREVIOUS RISK: new File(absolutePath).getCanonicalPath()
      * - Created temporary File objects on every log call
      * - Performed expensive file system I/O operations
      * - Could cause contention and memory pressure
      *
-     * OUR SOLUTION: Simple string normalization
-     * - No object allocation except result string
+     * OUR SOLUTION: Efficient string normalization
+     * - No object allocation when no replacement needed (common case on Unix/Linux)
      * - No file system access
      * - Consistent path format across platforms
+     * - Avoids unnecessary string creation when path is already normalized
      */
-    return absolutePath.replace('\\', '/');
+    // MEMORY SAFETY: Avoid unnecessary string allocation if no backslashes are present
+    return absolutePath.indexOf('\\') >= 0 ? absolutePath.replace('\\', '/') : absolutePath;
   }
 
   /**
