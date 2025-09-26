@@ -33,6 +33,7 @@ public final class TraceRootConstants {
   // Environment Variables
   public static final String ENV_API_BASE_URL = "TRACEROOT_API_BASE_URL";
   public static final String ENV_CREDENTIAL_REFRESH_HOURS = "TRACEROOT_CREDENTIAL_REFRESH_HOURS";
+  public static final String ENV_PROVIDER = "TRACEROOT_PROVIDER";
 
   private TraceRootConstants() {
     // Utility class

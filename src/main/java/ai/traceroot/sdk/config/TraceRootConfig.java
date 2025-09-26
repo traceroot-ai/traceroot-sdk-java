@@ -1,6 +1,7 @@
 package ai.traceroot.sdk.config;
 
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.types.Provider;
 
 public interface TraceRootConfig {
 
@@ -19,6 +20,9 @@ public interface TraceRootConfig {
 
   // User identification
   String getName();
+
+  // Provider Configuration
+  Provider getProvider();
 
   // AWS Configuration
   String getAwsRegion();

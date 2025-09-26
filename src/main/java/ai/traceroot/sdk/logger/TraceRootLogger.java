@@ -2,6 +2,7 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.utils.ProviderValidationUtils;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import java.util.Map;
@@ -66,9 +67,9 @@ public class TraceRootLogger {
       setupJsonConsoleAppender(context, config);
     }
 
-    // Configure CloudWatch appender if cloud logging is enabled
-    if (config.isEnableLogCloudExport() && config.getAwsCredentials() != null) {
-      setupCloudWatchAppender(context, config);
+    // Configure provider-specific cloud appender if cloud logging is enabled
+    if (config.isEnableLogCloudExport()) {
+      setupProviderCloudAppender(context, config);
     }
   }
 
@@ -109,32 +110,25 @@ public class TraceRootLogger {
     }
   }
 
-  /** Setup CloudWatch appender programmatically */
-  private static void setupCloudWatchAppender(LoggerContext context, TraceRootConfigImpl config) {
+  /** Setup provider-specific cloud appender programmatically */
+  private static void setupProviderCloudAppender(
+      LoggerContext context, TraceRootConfigImpl config) {
     try {
-      CloudWatchAppender cloudWatchAppender = new CloudWatchAppender();
-      cloudWatchAppender.setContext(context);
-      cloudWatchAppender.setConfig(config);
+      ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent> providerAppender =
+          ProviderAppenderRegistry.createAppenderForProvider(context, config);
 
-      // Configure appender settings
-      String logGroupName =
-          config.getInternalName() != null ? config.getInternalName() : "java-sdk";
-      String logStreamName =
-          String.format("%s-%s", config.getServiceName(), config.getEnvironment());
+      if (providerAppender != null) {
+        // Add appender to root logger
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.addAppender(providerAppender);
+      } else {
+        System.err.println(
+            "[TraceRoot] Failed to create appender for provider: " + config.getProvider());
 
-      cloudWatchAppender.setLogGroupName(logGroupName);
-      cloudWatchAppender.setLogStreamName(logStreamName);
-      cloudWatchAppender.setRegion(config.getAwsRegion());
-      cloudWatchAppender.setName("CloudWatchAppender");
-
-      cloudWatchAppender.start();
-
-      // Add appender to root logger
-      Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
-      rootLogger.addAppender(cloudWatchAppender);
-
+        ProviderValidationUtils.validateProviderCredentials(config);
+      }
     } catch (Exception e) {
-      System.err.println("[TraceRoot] Failed to setup CloudWatch appender: " + e.getMessage());
+      System.err.println("[TraceRoot] Failed to setup provider cloud appender: " + e.getMessage());
     }
   }
 
