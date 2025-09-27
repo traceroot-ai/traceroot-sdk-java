@@ -44,6 +44,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
    * OUR SOLUTION: Implement queue size limit with graceful degradation
    */
   private int maxQueueSize = 10000; // Prevent unbounded queue growth in high-throughput scenarios
+  private static final int ERROR_THROTTLE_INTERVAL = 1000; // Log every 1000 drops to avoid spam
 
   // Internal state
   private AsyncProducerClient clsClient;
@@ -163,7 +164,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       if (logItemQueue.size() >= maxQueueSize) {
         droppedLogs.incrementAndGet();
         // MEMORY SAFETY: Throttled error reporting to prevent log spam during high load
-        if (droppedLogs.get() % 1000 == 1) { // Log every 1000 drops to avoid spam
+        if (droppedLogs.get() % ERROR_THROTTLE_INTERVAL == 1) {
           System.err.println(
               "[TraceRoot] Dropped "
                   + droppedLogs.get()
