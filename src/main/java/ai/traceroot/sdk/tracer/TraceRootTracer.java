@@ -253,7 +253,8 @@ public class TraceRootTracer {
       }
 
       // Construct the endpoint based on the region
-      String tencentOtlpEndpoint = "http://" + region + "-qcloud.apm.tencentcs.com:4317";
+      String tencentOtlpEndpoint =
+          String.format(TraceRootConstants.TENCENT_APM_ENDPOINT_PATTERN, region);
 
       config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
       config.setOtlpEndpoint(tencentOtlpEndpoint);
@@ -262,7 +263,7 @@ public class TraceRootTracer {
         logger.debug("[TraceRoot] Tencent Cloud APM endpoint configured: {}", tencentOtlpEndpoint);
       }
     } else {
-      logger.warn("[TraceRoot] Tencent provider selected but no Tencent credentials configured");
+      logger.error("[TraceRoot] Tencent provider selected but no Tencent credentials configured");
     }
   }
 
@@ -362,11 +363,8 @@ public class TraceRootTracer {
 
       // For Tencent Cloud APM, authentication is handled via resource attributes (token)
       // No headers needed - the token is passed as a resource attribute
-      if (config.getTencentCredentials() != null) {
-        ai.traceroot.sdk.types.TencentCredentials tencentCreds = config.getTencentCredentials();
-        if (config.isTracerVerbose()) {
-          logger.debug("[TraceRoot] Configured Tencent Cloud APM gRPC exporter");
-        }
+      if (config.getTencentCredentials() != null && config.isTracerVerbose()) {
+        logger.debug("[TraceRoot] Configured Tencent Cloud APM gRPC exporter");
       }
       exporter = grpcBuilder.build();
     } else {

@@ -30,6 +30,10 @@ public final class TraceRootConstants {
   public static final String SYSTEM_PROPERTY_CREDENTIAL_REFRESH_HOURS =
       "traceroot.credential.refreshHours";
 
+  // Tencent Cloud Configuration
+  public static final String TENCENT_APM_ENDPOINT_PATTERN =
+      "http://%s-qcloud.apm.tencentcs.com:4317";
+
   // Environment Variables
   public static final String ENV_API_BASE_URL = "TRACEROOT_API_BASE_URL";
   public static final String ENV_CREDENTIAL_REFRESH_HOURS = "TRACEROOT_CREDENTIAL_REFRESH_HOURS";
