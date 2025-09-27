@@ -60,7 +60,7 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   private ScheduledExecutorService scheduler;
   private final AtomicLong processedLogs = new AtomicLong(0);
   private final AtomicLong droppedLogs =
-      new AtomicLong(0); // MEMORY SAFETY: Track dropped logs for monitoring
+      new AtomicLong(); // MEMORY SAFETY: Track dropped logs for monitoring
 
   @Override
   public void start() {
