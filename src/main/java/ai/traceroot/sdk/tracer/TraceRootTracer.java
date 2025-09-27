@@ -250,7 +250,7 @@ public class TraceRootTracer {
     if (config.getTencentCredentials() != null) {
       String region = config.getTencentCredentials().getRegion();
       if (region == null) {
-        region = "ap-hongkong"; // Default region
+        region = TraceRootConstants.TENCENT_DEFAULT_REGION; // Default region
       }
 
       // Construct the endpoint based on the region
@@ -290,7 +290,7 @@ public class TraceRootTracer {
         && config.getTencentCredentials().getTraceToken() != null) {
 
       String token = config.getTencentCredentials().getTraceToken();
-      resourceBuilder.put("token", token);
+      resourceBuilder.put(TraceRootConstants.TENCENT_APM_TOKEN_ATTRIBUTE, token);
     }
 
     Resource resource = resourceBuilder.build();

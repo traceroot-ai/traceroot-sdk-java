@@ -31,8 +31,10 @@ public final class TraceRootConstants {
       "traceroot.credential.refreshHours";
 
   // Tencent Cloud Configuration
+  public static final String TENCENT_DEFAULT_REGION = "ap-hongkong";
   public static final String TENCENT_APM_ENDPOINT_PATTERN =
       "http://%s-qcloud.apm.tencentcs.com:4317";
+  public static final String TENCENT_APM_TOKEN_ATTRIBUTE = "token";
 
   // Environment Variables
   public static final String ENV_API_BASE_URL = "TRACEROOT_API_BASE_URL";
