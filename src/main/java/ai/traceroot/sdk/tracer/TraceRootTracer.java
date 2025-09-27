@@ -252,9 +252,8 @@ public class TraceRootTracer {
         region = "ap-hongkong"; // Default region
       }
 
-      // Use the exact endpoint from Tencent Cloud APM console
-      // From console: http://ap-hongkong-qcloud.apm.tencentcs.com:4317
-      String tencentOtlpEndpoint = "http://ap-hongkong-qcloud.apm.tencentcs.com:4317";
+      // Construct the endpoint based on the region
+      String tencentOtlpEndpoint = "http://" + region + "-qcloud.apm.tencentcs.com:4317";
 
       config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
       config.setOtlpEndpoint(tencentOtlpEndpoint);
