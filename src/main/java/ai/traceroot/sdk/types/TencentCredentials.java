@@ -18,6 +18,7 @@ public class TencentCredentials {
   private String logset; // Equivalent to AWS Log Group
   private String topic; // Equivalent to AWS Log Stream
   private String otlpEndpoint;
+  private String traceToken; // APM trace token for authentication
 
   public TencentCredentials() {}
 
@@ -28,7 +29,8 @@ public class TencentCredentials {
       String region,
       String logset,
       String topic,
-      String otlpEndpoint) {
+      String otlpEndpoint,
+      String traceToken) {
     this.secretId = secretId;
     this.secretKey = secretKey;
     this.sessionToken = sessionToken;
@@ -36,6 +38,7 @@ public class TencentCredentials {
     this.logset = logset;
     this.topic = topic;
     this.otlpEndpoint = otlpEndpoint;
+    this.traceToken = traceToken;
   }
 
   public String getSecretId() {
@@ -92,5 +95,13 @@ public class TencentCredentials {
 
   public void setOtlpEndpoint(String otlpEndpoint) {
     this.otlpEndpoint = otlpEndpoint;
+  }
+
+  public String getTraceToken() {
+    return traceToken;
+  }
+
+  public void setTraceToken(String traceToken) {
+    this.traceToken = traceToken;
   }
 }

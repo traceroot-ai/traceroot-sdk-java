@@ -6,11 +6,13 @@ import ai.traceroot.sdk.constants.TraceRootConstants;
 import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.types.AwsCredentials;
 import ai.traceroot.sdk.utils.CredentialRefreshScheduler;
+import ai.traceroot.sdk.utils.SystemUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -183,78 +185,128 @@ public class TraceRootTracer {
 
   /** Prepare and validate configuration */
   private void prepareConfig() {
-    // Fetch AWS credentials if any cloud export is enabled
+    // Fetch credentials based on provider if any cloud export is enabled
     if (!config.isLocalMode()
-        && (config.isEnableSpanCloudExport() || config.isEnableLogCloudExport())
-        && config.getToken() != null) {
-      CredentialService credentialService = new CredentialService();
-      AwsCredentials credentials = credentialService.fetchAwsCredentialsSync(config);
+        && (config.isEnableSpanCloudExport() || config.isEnableLogCloudExport())) {
 
-      if (credentials != null) {
-        if (config.isTracerVerbose()) {
-          System.out.println(
-              "[TraceRoot] Setting AWS credentials in config: "
-                  + (credentials.getAccessKeyId() != null
-                      ? credentials.getAccessKeyId().substring(0, 4) + "..."
-                      : "null"));
+      if (config.getProvider() == ai.traceroot.sdk.types.Provider.AWS) {
+        // AWS requires token for credential API
+        if (config.getToken() != null) {
+          prepareAwsConfig();
         }
+      } else if (config.getProvider() == ai.traceroot.sdk.types.Provider.TENCENT) {
+        // Tencent uses direct credentials, no token needed
+        prepareTencentConfig();
+      }
+    }
+  }
 
-        config.setAwsCredentials(credentials);
+  /** Prepare AWS-specific configuration */
+  private void prepareAwsConfig() {
+    CredentialService credentialService = new CredentialService();
+    AwsCredentials credentials = credentialService.fetchAwsCredentialsSync(config);
 
-        if (credentials.getHash() != null) {
-          config.setInternalName(credentials.getHash());
-        }
-
-        if (credentials.getOtlpEndpoint() != null) {
-          config.setOtlpEndpoint(credentials.getOtlpEndpoint());
-        }
-
-        if (config.isTracerVerbose()) {
-          logger.debug(
-              "[TraceRoot] Credentials fetched successfully for token: {}... → {}",
-              config.getToken().substring(0, Math.min(20, config.getToken().length())),
-              credentials.getOtlpEndpoint());
-        }
-      } else {
-        if (config.isTracerVerbose()) {
-          System.out.println("[TraceRoot] No credentials returned from API");
-        }
+    if (credentials != null) {
+      if (config.isTracerVerbose()) {
+        logger.debug(
+            "[TraceRoot] Setting AWS credentials in config: "
+                + (credentials.getAccessKeyId() != null
+                    ? credentials.getAccessKeyId().substring(0, 4) + "..."
+                    : "null"));
       }
 
-      try {
-        credentialService.close();
-      } catch (Exception e) {
-        logger.warn("[TraceRoot] Error closing credential service", e);
+      config.setAwsCredentials(credentials);
+
+      if (credentials.getHash() != null) {
+        config.setInternalName(credentials.getHash());
       }
+
+      if (credentials.getOtlpEndpoint() != null) {
+        config.setOtlpEndpoint(credentials.getOtlpEndpoint());
+      }
+
+      if (config.isTracerVerbose()) {
+        logger.debug(
+            "[TraceRoot] AWS credentials fetched successfully. OTLP endpoint: {}",
+            credentials.getOtlpEndpoint());
+      }
+    } else {
+      if (config.isTracerVerbose()) {
+        logger.debug("[TraceRoot] No AWS credentials returned from API");
+      }
+    }
+
+    try {
+      credentialService.close();
+    } catch (Exception e) {
+      logger.warn("[TraceRoot] Error closing credential service", e);
+    }
+  }
+
+  /** Prepare Tencent-specific configuration */
+  private void prepareTencentConfig() {
+    // For Tencent, we use the configured credentials and construct the OTLP endpoint
+    if (config.getTencentCredentials() != null) {
+      String region = config.getTencentCredentials().getRegion();
+      if (region == null) {
+        region = TraceRootConstants.TENCENT_DEFAULT_REGION; // Default region
+      }
+
+      // Construct the endpoint based on the region
+      String tencentOtlpEndpoint =
+          String.format(TraceRootConstants.TENCENT_APM_ENDPOINT_PATTERN, region);
+
+      config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
+      config.setOtlpEndpoint(tencentOtlpEndpoint);
+
+      if (config.isTracerVerbose()) {
+        logger.debug("[TraceRoot] Tencent Cloud APM endpoint configured: {}", tencentOtlpEndpoint);
+      }
+    } else {
+      logger.error("[TraceRoot] Tencent provider selected but no Tencent credentials configured");
     }
   }
 
   /** Setup OpenTelemetry tracing */
   private void setupTracing() {
     // Create resource with service information
-    Resource resource =
+    var resourceBuilder =
         Resource.getDefault().toBuilder()
             .put("service.name", config.getServiceName())
             .put("service.version", config.getGithubCommitHash())
             .put("service.github_owner", config.getGithubOwner())
             .put("service.github_repo_name", config.getGithubRepoName())
             .put("service.environment", config.getEnvironment())
-            .put("telemetry.sdk.language", TraceRootConstants.TELEMETRY_SDK_LANGUAGE)
-            .build();
+            .put("telemetry.sdk.language", TraceRootConstants.TELEMETRY_SDK_LANGUAGE);
+
+    // Add host.name for instance identification
+    String hostName = SystemUtils.getHostName();
+    resourceBuilder.put("host.name", hostName);
+
+    // Add Tencent Cloud APM token as resource attribute if provider is Tencent
+    if (config.getProvider() == ai.traceroot.sdk.types.Provider.TENCENT
+        && config.getTencentCredentials() != null
+        && config.getTencentCredentials().getTraceToken() != null) {
+
+      String token = config.getTencentCredentials().getTraceToken();
+      resourceBuilder.put(TraceRootConstants.TENCENT_APM_TOKEN_ATTRIBUTE, token);
+    }
+
+    Resource resource = resourceBuilder.build();
 
     // Create tracer provider builder
     var tracerProviderBuilder = SdkTracerProvider.builder().setResource(resource);
 
     // Add span processors based on configuration
     if (config.isEnableSpanCloudExport()) {
-      SpanExporter otlpExporter =
-          OtlpHttpSpanExporter.builder().setEndpoint(config.getOtlpEndpoint()).build();
+      SpanExporter otlpExporter = createOtlpExporter();
 
       if (config.isLocalMode()) {
         tracerProviderBuilder.addSpanProcessor(SimpleSpanProcessor.create(otlpExporter));
       } else {
         // Create BatchSpanProcessor using builder pattern
-        tracerProviderBuilder.addSpanProcessor(BatchSpanProcessor.builder(otlpExporter).build());
+        BatchSpanProcessor batchProcessor = BatchSpanProcessor.builder(otlpExporter).build();
+        tracerProviderBuilder.addSpanProcessor(batchProcessor);
       }
 
       if (config.isTracerVerbose()) {
@@ -295,6 +347,31 @@ public class TraceRootTracer {
     if (config.isTracerVerbose()) {
       logger.debug("[TraceRoot] OpenTelemetry tracer setup completed");
     }
+  }
+
+  /** Create OTLP exporter with provider-specific authentication */
+  private SpanExporter createOtlpExporter() {
+    String endpoint = config.getOtlpEndpoint();
+    SpanExporter exporter;
+    if (config.getProvider() == ai.traceroot.sdk.types.Provider.TENCENT) {
+      // Use gRPC exporter for Tencent Cloud APM
+      var grpcBuilder = OtlpGrpcSpanExporter.builder().setEndpoint(endpoint);
+
+      // For Tencent Cloud APM, authentication is handled via resource attributes (token)
+      // No headers needed - the token is passed as a resource attribute
+      if (config.getTencentCredentials() != null && config.isTracerVerbose()) {
+        logger.debug("[TraceRoot] Configured Tencent Cloud APM gRPC exporter");
+      }
+      exporter = grpcBuilder.build();
+    } else {
+      // Use HTTP exporter for AWS and other providers
+      var httpBuilder = OtlpHttpSpanExporter.builder().setEndpoint(endpoint);
+      // For AWS, authentication is typically handled by the endpoint or AWS SDK integration
+      // No additional headers needed for AWS X-Ray or other AWS tracing services
+      exporter = httpBuilder.build();
+    }
+
+    return exporter;
   }
 
   /** Start credential refresh scheduler */

@@ -75,6 +75,8 @@ public class StandaloneExample {
     tencentCredentials.setRegion("ap-hongkong"); // Optional: defaults to ap-hongkong
     tencentCredentials.setLogset(
         System.getenv("TENCENT_LOGSET")); // Optional: CLS logset name (like AWS log group)
+    tencentCredentials.setTraceToken(
+        System.getenv("TRACE_TOKEN")); // Required: APM trace token for authentication
 
     // Set credentials on config
     config.setTencentCredentials(tencentCredentials);
