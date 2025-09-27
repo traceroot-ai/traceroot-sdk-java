@@ -164,7 +164,17 @@ public class LogAppenderUtils {
    */
 
   // MEMORY SAFETY: Cache working directory to avoid repeated system property calls
-  private static volatile String cachedWorkingDir = null;
+  private static final String cachedWorkingDir;
+
+  static {
+    String dir;
+    try {
+      dir = System.getProperty("user.dir");
+    } catch (Exception e) {
+      dir = "";
+    }
+    cachedWorkingDir = dir;
+  }
 
   /**
    * Construct file path from StackTraceElement
@@ -189,21 +199,12 @@ public class LogAppenderUtils {
      * WHY CACHE: System.getProperty() calls are expensive and unnecessary
      * for every log event since working directory doesn't change during runtime.
      *
-     * THREAD SAFETY: Double-checked locking pattern ensures:
-     * - Only one thread initializes the cache
-     * - Volatile ensures visibility across threads
-     * - Minimal synchronization overhead after initialization
+     * THREAD SAFETY: Static initializer ensures:
+     * - Single initialization at class loading time
+     * - Thread-safe initialization guaranteed by JVM
+     * - No synchronization overhead during runtime
      */
     String workingDir = cachedWorkingDir;
-    if (workingDir == null) {
-      synchronized (LogAppenderUtils.class) {
-        workingDir = cachedWorkingDir;
-        if (workingDir == null) {
-          // MEMORY SAFETY: One-time initialization, cached for application lifetime
-          workingDir = cachedWorkingDir = System.getProperty("user.dir");
-        }
-      }
-    }
 
     // Convert package to path and construct absolute path
     String packagePath = className.replace('.', '/');
