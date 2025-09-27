@@ -227,8 +227,7 @@ public class TraceRootTracer {
 
       if (config.isTracerVerbose()) {
         logger.debug(
-            "[TraceRoot] AWS credentials fetched successfully for token: {}... → {}",
-            config.getToken().substring(0, Math.min(20, config.getToken().length())),
+            "[TraceRoot] AWS credentials fetched successfully. OTLP endpoint: {}",
             credentials.getOtlpEndpoint());
       }
     } else {
