@@ -28,12 +28,40 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   private String topic; // Equivalent to AWS Log Stream - this will be the topic ID
   private String region = "ap-hongkong";
 
+  /*
+   * MEMORY SAFETY: Bounded Queue Protection
+   *
+   * RISK: ConcurrentLinkedQueue is unbounded by default. In high-throughput scenarios
+   * where log production rate exceeds processing rate, the queue can grow infinitely
+   * and cause OutOfMemoryError.
+   *
+   * SCENARIOS THAT CAUSE UNBOUNDED GROWTH:
+   * 1. Network issues preventing log delivery to Tencent CLS
+   * 2. Application producing logs faster than 2-second batch intervals
+   * 3. Tencent CLS service unavailability or rate limiting
+   * 4. Configuration errors preventing successful log transmission
+   *
+   * OUR SOLUTION: Implement queue size limit with graceful degradation
+   */
+  private int maxQueueSize = 10000; // Prevent unbounded queue growth in high-throughput scenarios
+  private static final int ERROR_THROTTLE_INTERVAL = 1000; // Log every 1000 drops to avoid spam
+
   // Internal state
   private AsyncProducerClient clsClient;
   private TraceRootConfigImpl config;
-  private final Queue<ILoggingEvent> logEventQueue = new ConcurrentLinkedQueue<>();
+
+  /*
+   * MEMORY SAFETY: Queue Design
+   * - ConcurrentLinkedQueue for thread-safe operations
+   * - Size monitoring to prevent unbounded growth
+   * - Graceful log dropping when capacity exceeded
+   * - Metrics tracking for monitoring queue health
+   */
+  private final Queue<LogItem> logItemQueue = new ConcurrentLinkedQueue<>();
   private ScheduledExecutorService scheduler;
   private final AtomicLong processedLogs = new AtomicLong(0);
+  private final AtomicLong droppedLogs =
+      new AtomicLong(0); // MEMORY SAFETY: Track dropped logs for monitoring
 
   @Override
   public void start() {
@@ -95,8 +123,63 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
       return;
     }
 
-    // Add event to queue for batch processing
-    logEventQueue.offer(event);
+    /*
+     * MEMORY SAFETY: Immediate Processing Strategy
+     *
+     * WHY PROCESS IMMEDIATELY:
+     * The original design queued ILoggingEvent objects and processed them later
+     * on a background thread. This caused issues because:
+     *
+     * 1. MDC (ThreadLocal) values were lost when processing on different thread
+     * 2. Stack traces showed shutdown methods instead of actual user code
+     * 3. Thread context was invalid by the time logs were processed
+     *
+     * OUR SOLUTION:
+     * - Process log events immediately in append() on the original thread
+     * - Queue pre-processed LogItem objects instead of raw events
+     * - Preserve all context (stack trace, MDC) at the correct time
+     * - Separate processing (immediate) from transmission (batched)
+     */
+
+    // Process the event immediately to capture stack trace while MDC is available
+    try {
+      // MEMORY SAFETY: Process immediately while thread context is valid
+      LogItem logItem = createLogItem(event);
+
+      /*
+       * MEMORY SAFETY: Queue Overflow Protection
+       *
+       * Without this check, the queue could grow unbounded in scenarios like:
+       * - Network connectivity issues
+       * - Tencent CLS service outages
+       * - Rate limiting from cloud provider
+       * - Application generating logs faster than network can handle
+       *
+       * GRACEFUL DEGRADATION STRATEGY:
+       * - Monitor queue size on every append
+       * - Drop new logs when limit exceeded (preserve application performance)
+       * - Track dropped count for monitoring/alerting
+       * - Throttled error logging to avoid log spam
+       */
+      if (logItemQueue.size() >= maxQueueSize) {
+        droppedLogs.incrementAndGet();
+        // MEMORY SAFETY: Throttled error reporting to prevent log spam during high load
+        if (droppedLogs.get() % ERROR_THROTTLE_INTERVAL == 1) {
+          System.err.println(
+              "[TraceRoot] Dropped "
+                  + droppedLogs.get()
+                  + " logs due to queue overflow. "
+                  + "Consider increasing batch processing rate or reducing log volume.");
+        }
+        return; // Drop this log to prevent memory exhaustion
+      }
+
+      // MEMORY SAFETY: Queue bounded LogItem objects (processed, fixed-size) not raw events
+      logItemQueue.offer(logItem);
+    } catch (Exception e) {
+      // MEMORY SAFETY: Error handling without rethrowing to prevent app disruption
+      System.err.println("[TraceRoot] Error creating log item: " + e.getMessage());
+    }
   }
 
   private void initializeCLSClient() throws Exception {
@@ -267,21 +350,16 @@ public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   }
 
   private void flushLogs() {
-    if (logEventQueue.isEmpty() || clsClient == null) {
+    if (logItemQueue.isEmpty() || clsClient == null) {
       return;
     }
 
-    // Process all events in the queue
+    // Process all items in the queue
     List<LogItem> logItems = new ArrayList<>();
-    ILoggingEvent event;
+    LogItem logItem;
 
-    while ((event = logEventQueue.poll()) != null && logItems.size() < 100) {
-      try {
-        LogItem logItem = createLogItem(event);
-        logItems.add(logItem);
-      } catch (Exception e) {
-        System.err.println("[TraceRoot] Error creating log item: " + e.getMessage());
-      }
+    while ((logItem = logItemQueue.poll()) != null && logItems.size() < 100) {
+      logItems.add(logItem);
     }
 
     if (logItems.isEmpty()) {

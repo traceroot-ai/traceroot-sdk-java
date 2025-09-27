@@ -2,6 +2,7 @@ package ai.traceroot.sdk.logger;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.LogLevel;
+import ai.traceroot.sdk.utils.LogAppenderUtils;
 import ai.traceroot.sdk.utils.ProviderValidationUtils;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -96,7 +97,6 @@ public class TraceRootLogger {
 
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
-      e.printStackTrace();
     }
 
     // Update all existing logger instances with the new config
@@ -259,9 +259,72 @@ public class TraceRootLogger {
       System.out.println("[TraceRoot Local] Logging in local mode");
     }
 
-    // The trace correlation will be automatically handled by TraceCorrelationConverter
-    // in the Logback configuration
-    logAction.run();
+    /*
+     * MEMORY SAFETY: MDC Thread-Local Management
+     *
+     * MDC (Mapped Diagnostic Context) uses ThreadLocal storage. In high-throughput applications,
+     * improper MDC management can cause memory leaks because:
+     * 1. ThreadLocal values persist for the lifetime of the thread
+     * 2. In thread pools (common in Spring Boot), threads are reused
+     * 3. Unreleased ThreadLocal values accumulate over time
+     *
+     * OUR SOLUTION:
+     * - Always capture original MDC state before modification
+     * - Use try-finally to guarantee cleanup regardless of exceptions
+     * - Restore original state or explicitly remove keys to prevent accumulation
+     * - This ensures zero memory leaks even in high-throughput scenarios
+     */
+
+    // Capture stack trace at log creation time for async/batch processing
+    // MEMORY SAFETY: Store original MDC state for proper cleanup
+    String originalStackTrace = MDC.get("traceroot.stack_trace");
+    try {
+      StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+      StackTraceElement caller = LogAppenderUtils.findUserLoggingLocation(stackTrace);
+
+      if (caller != null) {
+        String methodName = LogAppenderUtils.cleanAspectJMethodName(caller.getMethodName());
+        int lineNumber = caller.getLineNumber();
+
+        String filePath = LogAppenderUtils.getFilePath(caller);
+
+        // Apply root path transformation if configured
+        if (config != null
+            && config.getRootPath() != null
+            && filePath.startsWith(config.getRootPath())) {
+          filePath = filePath.substring(config.getRootPath().length());
+          if (filePath.startsWith("/")) {
+            filePath = filePath.substring(1);
+          }
+        }
+
+        String stackTraceInfo = String.format("%s:%s:%d", filePath, methodName, lineNumber);
+        // MEMORY SAFETY: MDC value will be cleaned up in finally block
+        MDC.put("traceroot.stack_trace", stackTraceInfo);
+      }
+
+      // The trace correlation will be automatically handled by TraceCorrelationConverter
+      // in the Logback configuration
+      logAction.run();
+    } finally {
+      /*
+       * CRITICAL MEMORY SAFETY: MDC Cleanup
+       *
+       * This finally block is essential for preventing memory leaks:
+       * - Restores original MDC state if there was one
+       * - Removes our key completely if no original value existed
+       * - Executes even if exceptions occur during logging
+       * - Ensures ThreadLocal storage doesn't accumulate stale values
+       *
+       * WITHOUT THIS CLEANUP: In high-throughput Spring Boot applications,
+       * ThreadLocal values would accumulate indefinitely, causing OOM errors.
+       */
+      if (originalStackTrace != null) {
+        MDC.put("traceroot.stack_trace", originalStackTrace);
+      } else {
+        MDC.remove("traceroot.stack_trace");
+      }
+    }
   }
 
   // Delegate methods for compatibility
