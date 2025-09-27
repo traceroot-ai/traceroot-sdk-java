@@ -6,6 +6,7 @@ import ai.traceroot.sdk.constants.TraceRootConstants;
 import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.types.AwsCredentials;
 import ai.traceroot.sdk.utils.CredentialRefreshScheduler;
+import ai.traceroot.sdk.utils.SystemUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
@@ -280,12 +281,8 @@ public class TraceRootTracer {
             .put("telemetry.sdk.language", TraceRootConstants.TELEMETRY_SDK_LANGUAGE);
 
     // Add host.name for instance identification
-    try {
-      String hostName = java.net.InetAddress.getLocalHost().getHostName();
-      resourceBuilder.put("host.name", hostName);
-    } catch (Exception e) {
-      logger.error("[TraceRoot] Failed to get host name: " + e.getMessage());
-    }
+    String hostName = SystemUtils.getHostName();
+    resourceBuilder.put("host.name", hostName);
 
     // Add Tencent Cloud APM token as resource attribute if provider is Tencent
     if (config.getProvider() == ai.traceroot.sdk.types.Provider.TENCENT
