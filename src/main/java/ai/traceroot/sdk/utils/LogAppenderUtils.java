@@ -170,7 +170,18 @@ public class LogAppenderUtils {
     String dir;
     try {
       dir = System.getProperty("user.dir");
+    } catch (SecurityException e) {
+      // SecurityManager prevents access to system property
+      System.err.println(
+          "[TraceRoot] Warning: Cannot access user.dir system property due to security"
+              + " restrictions: "
+              + e.getMessage());
+      dir = ""; // Fallback to empty string for relative path construction
     } catch (Exception e) {
+      // Other unexpected exceptions
+      System.err.println(
+          "[TraceRoot] Warning: Unexpected error accessing user.dir system property: "
+              + e.getMessage());
       dir = "";
     }
     cachedWorkingDir = dir;
