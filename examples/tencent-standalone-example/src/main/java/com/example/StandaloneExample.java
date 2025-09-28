@@ -55,7 +55,6 @@ public class StandaloneExample {
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
-            .token(System.getenv("TRACEROOT_TOKEN")) // Get from environment
             .environment("development")
             .provider(Provider.TENCENT) // Use Tencent Cloud provider
             .enableSpanConsoleExport(false) // For local development
