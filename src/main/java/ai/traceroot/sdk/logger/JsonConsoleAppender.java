@@ -38,11 +38,11 @@ public class JsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
   @Override
   protected void append(ILoggingEvent event) {
     try {
-      // For console, use standard logback formatting
+      // For console, use standard logback formatting with UTC timestamps
       // Format: timestamp [thread] LEVEL logger - message
       String timestamp =
           java.time.Instant.ofEpochMilli(event.getTimeStamp())
-              .atZone(java.time.ZoneId.systemDefault())
+              .atZone(java.time.ZoneOffset.UTC)
               .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
       String formattedMessage =

@@ -361,9 +361,9 @@ public class LogAppenderUtils {
     // Message
     logData.put("message", event.getFormattedMessage());
 
-    // Timestamp
+    // Timestamp in UTC
     java.time.Instant instant = java.time.Instant.ofEpochMilli(event.getTimeStamp());
-    java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneId.systemDefault());
+    java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneOffset.UTC);
     String formattedTimestamp =
         zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS"));
     logData.put("timestamp", formattedTimestamp);
