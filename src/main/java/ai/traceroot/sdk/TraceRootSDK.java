@@ -14,7 +14,8 @@ import java.util.function.Supplier;
 /**
  * Main entry point for TraceRoot SDK
  *
- * <p>Usage: TraceRootSDK.initialize(config); TraceRootSDK.trace("operation-name", () -> { ... });
+ * <p>Usage: TraceRootSDK.initialize(config); TraceRootSDK.trace("operation-name", () -&gt; { ...
+ * });
  */
 public final class TraceRootSDK {
 
