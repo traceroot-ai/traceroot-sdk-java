@@ -82,7 +82,7 @@ public class CredentialService {
       request.setHeader("User-Agent", "TraceRoot-SDK-Java");
 
       try (CloseableHttpClient client = this.httpClient) {
-        ClassicHttpResponse response = client.executeOpen(null, request, null);
+        ClassicHttpResponse response = client.execute(request);
 
         int statusCode = response.getCode();
         String responseBody = EntityUtils.toString(response.getEntity());

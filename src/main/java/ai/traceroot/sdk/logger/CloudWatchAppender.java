@@ -40,9 +40,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
   public void start() {
 
     if (config == null) {
-      String error = "TraceRoot config not set";
-      addError(error);
-      System.err.println("[TraceRoot] CloudWatch appender error: " + error);
+      // Config not set yet - appender will be configured programmatically later
+      // Don't call addError() as it causes Spring Boot startup to fail
       return;
     }
 
