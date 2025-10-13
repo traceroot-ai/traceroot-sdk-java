@@ -32,8 +32,12 @@ public class TencentProviderAppender implements ProviderAppender {
       clsAppender.setConfig(config);
       clsAppender.setName("TencentCLSAppender");
 
-      // Set default logset (like AWS log group) and topic (like AWS log stream) from config
-      String logset = config.getInternalName() != null ? config.getInternalName() : "traceroot";
+      // Set logset name - use specified logset or default to "traceroot"
+      String logset =
+          (config.getTencentCredentials() != null
+                  && config.getTencentCredentials().getLogset() != null)
+              ? config.getTencentCredentials().getLogset()
+              : "traceroot";
       clsAppender.setLogset(logset);
 
       // Topic follows pattern: serviceName + "-" + environment (like internalSubName)

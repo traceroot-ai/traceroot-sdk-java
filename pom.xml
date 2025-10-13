@@ -57,6 +57,7 @@
         <!-- Logging (updated to latest secure version 1.5.18) -->
         <logback.version>1.5.18</logback.version>
         <slf4j.version>2.0.16</slf4j.version>
+        <log4j2.version>2.24.3</log4j2.version>
 
         <!-- AWS SDK (updated to latest) -->
         <aws-sdk.version>2.29.15</aws-sdk.version>
@@ -120,17 +121,38 @@
             <artifactId>opentelemetry-exporter-logging</artifactId>
         </dependency>
 
-        <!-- Logging -->
+        <!-- Logging - Logback (default backend) -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Logging - Log4j2 (alternative backend) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j2.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j2.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- AWS SDK for CloudWatch -->

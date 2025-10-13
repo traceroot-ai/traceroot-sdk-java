@@ -4,19 +4,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>traceroot-standalone-example</artifactId>
+    <artifactId>traceroot-log4j2-example</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>TraceRoot Standalone Example</name>
-    <description>Standalone Java example for TraceRoot SDK</description>
+    <name>TraceRoot Log4j2 Example</name>
+    <description>Standalone Java example for TraceRoot SDK with Log4j2</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <logback.version>1.5.18</logback.version>
-        <slf4j.version>2.0.16</slf4j.version>
+        <log4j2.version>2.24.3</log4j2.version>
     </properties>
 
     <dependencies>
@@ -25,18 +24,30 @@
             <groupId>ai.traceroot</groupId>
             <artifactId>traceroot-sdk-java</artifactId>
             <version>0.0.1-alpha.1</version>
+            <exclusions>
+                <!-- Exclude Logback to use Log4j2 instead -->
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!-- Logback (explicitly included since it's optional in the SDK) -->
+        <!-- Log4j2 dependencies -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j2.version}</version>
         </dependency>
     </dependencies>
 
