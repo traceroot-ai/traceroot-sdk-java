@@ -1,13 +1,14 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.ProviderAppender;
 import ai.traceroot.sdk.types.Provider;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 
 /** AWS provider-specific log appender factory */
-public class AwsProviderAppender implements ProviderAppender {
+public class LogbackAwsProviderAppender implements ProviderAppender {
 
   @Override
   public boolean supportsProvider(Provider provider) {
@@ -21,7 +22,7 @@ public class AwsProviderAppender implements ProviderAppender {
     }
 
     try {
-      CloudWatchAppender cloudWatchAppender = new CloudWatchAppender();
+      LogbackCloudWatchAppender cloudWatchAppender = new LogbackCloudWatchAppender();
       cloudWatchAppender.setContext(context);
       cloudWatchAppender.setConfig(config);
 

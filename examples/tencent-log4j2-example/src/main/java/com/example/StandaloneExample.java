@@ -2,7 +2,7 @@ package com.example;
 
 import ai.traceroot.sdk.TraceRootSDK;
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
-import ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger;
+import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
 import ai.traceroot.sdk.types.Provider;
@@ -14,11 +14,12 @@ import ai.traceroot.sdk.types.TencentCredentials;
  * <p>This example shows how to manually initialize TraceRoot SDK with Tencent Cloud provider for
  * logging to Tencent Cloud CLS (Cloud Log Service) using Log4j2 as the logging backend, similar to
  * how Sentry is initialized in Java applications.
+ *
+ * <p>Note: TraceRootLogger will automatically detect and use Log4j2 if it's on the classpath.
  */
 public class StandaloneExample {
 
-  private static final Log4j2TraceRootLogger logger =
-      Log4j2TraceRootLogger.getLogger(StandaloneExample.class);
+  private static final TraceRootLogger logger = TraceRootLogger.getLogger(StandaloneExample.class);
 
   public static void main(String[] args) {
     // Manual initialization (like Sentry.init())

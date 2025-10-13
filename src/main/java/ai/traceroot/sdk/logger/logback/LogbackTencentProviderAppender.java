@@ -1,13 +1,14 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.ProviderAppender;
 import ai.traceroot.sdk.types.Provider;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 
 /** Tencent Cloud provider-specific log appender factory for CLS integration */
-public class TencentProviderAppender implements ProviderAppender {
+public class LogbackTencentProviderAppender implements ProviderAppender {
 
   @Override
   public boolean supportsProvider(Provider provider) {
@@ -27,7 +28,7 @@ public class TencentProviderAppender implements ProviderAppender {
     }
 
     try {
-      TencentCLSAppender clsAppender = new TencentCLSAppender();
+      LogbackTencentCLSAppender clsAppender = new LogbackTencentCLSAppender();
       clsAppender.setContext(context);
       clsAppender.setConfig(config);
       clsAppender.setName("TencentCLSAppender");

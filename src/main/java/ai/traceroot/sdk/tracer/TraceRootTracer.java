@@ -3,7 +3,6 @@ package ai.traceroot.sdk.tracer;
 import ai.traceroot.sdk.api.CredentialService;
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.constants.TraceRootConstants;
-import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.types.AwsCredentials;
 import ai.traceroot.sdk.utils.CredentialRefreshScheduler;
 import ai.traceroot.sdk.utils.SystemUtils;
@@ -172,15 +171,6 @@ public class TraceRootTracer {
       }
     } catch (Exception e) {
       // Ignore errors in logger setup
-    }
-  }
-
-  private boolean isLogbackAvailable() {
-    try {
-      Class.forName("ch.qos.logback.classic.LoggerContext");
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
     }
   }
 
@@ -451,37 +441,62 @@ public class TraceRootTracer {
   /** Setup TraceRoot logging with CloudWatch integration */
   private void setupLogging() {
     try {
-      // Detect which logging backend is available and initialize accordingly
-      boolean isLog4j2Available = isLog4j2Available();
+      // Detect which logging backend is available and initialize accordingly (prefers Logback)
+      boolean isLogbackAvailable = isLogbackAvailable();
 
-      if (isLog4j2Available) {
-        // Use Log4j2 backend
+      if (isLogbackAvailable) {
+        // Use Logback backend (preferred)
         try {
-          Class<?> log4j2LoggerClass =
-              Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
+          Class<?> logbackLoggerClass =
+              Class.forName("ai.traceroot.sdk.logger.logback.LogbackTraceRootLogger");
           java.lang.reflect.Method initMethod =
-              log4j2LoggerClass.getDeclaredMethod("initialize", TraceRootConfigImpl.class);
+              logbackLoggerClass.getDeclaredMethod("initialize", TraceRootConfigImpl.class);
           initMethod.invoke(null, config);
 
           if (config.isTracerVerbose()) {
-            logger.debug("[TraceRoot] Logging setup completed with Log4j2 backend");
+            logger.debug("[TraceRoot] Logging setup completed with Logback backend");
           }
         } catch (Exception e) {
           logger.warn(
-              "[TraceRoot] Failed to initialize Log4j2 logger, falling back to Logback: "
-                  + e.getMessage());
-          TraceRootLogger.initialize(config);
+              "[TraceRoot] Failed to initialize Logback logger, trying Log4j2: " + e.getMessage());
+          // Fall back to Log4j2 if Logback initialization fails
+          setupLog4j2Logging();
         }
       } else {
-        // Use Logback backend (default)
-        TraceRootLogger.initialize(config);
-
-        if (config.isTracerVerbose()) {
-          logger.debug("[TraceRoot] Logging setup completed with Logback backend");
-        }
+        // Fall back to Log4j2 backend
+        setupLog4j2Logging();
       }
     } catch (Exception e) {
       logger.error("[TraceRoot] Failed to setup logging", e);
+    }
+  }
+
+  /** Setup Log4j2 logging */
+  private void setupLog4j2Logging() {
+    try {
+      Class<?> log4j2LoggerClass =
+          Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
+      java.lang.reflect.Method initMethod =
+          log4j2LoggerClass.getDeclaredMethod("initialize", TraceRootConfigImpl.class);
+      initMethod.invoke(null, config);
+
+      if (config.isTracerVerbose()) {
+        logger.debug("[TraceRoot] Logging setup completed with Log4j2 backend");
+      }
+    } catch (Exception e) {
+      logger.error("[TraceRoot] Failed to initialize Log4j2 logger: " + e.getMessage());
+      throw new RuntimeException("No supported logging backend found", e);
+    }
+  }
+
+  /** Check if Logback is available on the classpath */
+  private boolean isLogbackAvailable() {
+    try {
+      Class.forName("ch.qos.logback.classic.Logger");
+      Class.forName("ai.traceroot.sdk.logger.logback.LogbackTraceRootLogger");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
     }
   }
 
@@ -499,10 +514,21 @@ public class TraceRootTracer {
   /** Shutdown logging appenders */
   private void shutdownLogging() {
     try {
-      // Detect which logging backend is being used and shutdown accordingly
-      boolean isLog4j2Available = isLog4j2Available();
+      // Detect which logging backend is being used and shutdown accordingly (prefers Logback)
+      boolean isLogbackAvailable = isLogbackAvailable();
 
-      if (isLog4j2Available) {
+      if (isLogbackAvailable) {
+        try {
+          Class<?> logbackLoggerClass =
+              Class.forName("ai.traceroot.sdk.logger.logback.LogbackTraceRootLogger");
+          java.lang.reflect.Method shutdownMethod =
+              logbackLoggerClass.getDeclaredMethod("shutdown");
+          shutdownMethod.invoke(null);
+        } catch (Exception e) {
+          logger.warn("[TraceRoot] Failed to shutdown Logback logger: " + e.getMessage());
+          e.printStackTrace();
+        }
+      } else if (isLog4j2Available()) {
         try {
           Class<?> log4j2LoggerClass =
               Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
@@ -512,8 +538,6 @@ public class TraceRootTracer {
           logger.warn("[TraceRoot] Failed to shutdown Log4j2 logger: " + e.getMessage());
           e.printStackTrace();
         }
-      } else {
-        TraceRootLogger.shutdown();
       }
 
       if (config.isTracerVerbose()) {

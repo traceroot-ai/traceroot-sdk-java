@@ -1,4 +1,4 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -12,7 +12,7 @@ import io.opentelemetry.api.trace.SpanContext;
  * converterClass="ai.traceroot.sdk.logger.TraceCorrelationConverter" />} {@code
  * <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%traceId] %logger{36} - %msg%n</pattern>}
  */
-public class TraceCorrelationConverter extends ClassicConverter {
+public class LogbackTraceCorrelationConverter extends ClassicConverter {
 
   @Override
   public String convert(ILoggingEvent event) {

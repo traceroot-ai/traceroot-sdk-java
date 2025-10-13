@@ -1,6 +1,7 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.ProviderAppender;
 import ai.traceroot.sdk.types.Provider;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -9,14 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Registry for provider-specific appenders */
-public class ProviderAppenderRegistry {
+public class LogbackProviderAppenderRegistry {
 
   private static final List<ProviderAppender> appenders = new ArrayList<>();
 
   static {
     // Register all provider appenders
-    appenders.add(new AwsProviderAppender());
-    appenders.add(new TencentProviderAppender());
+    appenders.add(new LogbackAwsProviderAppender());
+    appenders.add(new LogbackTencentProviderAppender());
   }
 
   /**
