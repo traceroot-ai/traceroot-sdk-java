@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- CloudWatch and Tencent CLS appenders are configured programmatically by TraceRoot SDK -->
+    </Appenders>
+
+    <Loggers>
+        <!-- Root logger configuration -->
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+
+        <!-- TraceRoot SDK specific logger -->
+        <Logger name="ai.traceroot.sdk" level="WARN" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+        </Logger>
+
+        <!-- Reduce noise in logs -->
+        <Logger name="io.opentelemetry" level="WARN"/>
+        <Logger name="software.amazon.awssdk" level="WARN"/>
+        <Logger name="org.apache.hc" level="WARN"/>
+        <Logger name="com.tencentcloudapi" level="WARN"/>
+    </Loggers>
+</Configuration>

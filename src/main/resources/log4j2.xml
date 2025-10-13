@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- File Appender -->
+        <RollingFile name="FILE" fileName="logs/traceroot-sdk.log"
+                     filePattern="logs/traceroot-sdk.%d{yyyy-MM-dd}.%i.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- CloudWatch and Tencent CLS appenders are configured programmatically -->
+    </Appenders>
+
+    <Loggers>
+        <!-- Root logger configuration -->
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+            <!-- CloudWatch and CLS appenders are added programmatically when enabled -->
+        </Root>
+
+        <!-- TraceRoot SDK specific logger -->
+        <Logger name="ai.traceroot.sdk" level="WARN" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <!-- Reduce OpenTelemetry noise in logs -->
+        <Logger name="io.opentelemetry" level="WARN"/>
+
+        <!-- Reduce AWS SDK noise in logs -->
+        <Logger name="software.amazon.awssdk" level="WARN"/>
+
+        <!-- Reduce Apache HTTP Client noise in logs -->
+        <Logger name="org.apache.hc" level="WARN"/>
+
+        <!-- Reduce Tencent Cloud SDK noise in logs -->
+        <Logger name="com.tencentcloudapi" level="WARN"/>
+        <Logger name="java.net.http" level="WARN"/>
+    </Loggers>
+</Configuration>

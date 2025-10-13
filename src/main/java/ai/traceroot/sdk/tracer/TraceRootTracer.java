@@ -164,6 +164,28 @@ public class TraceRootTracer {
   /** Suppress noisy loggers before making HTTP requests */
   private void suppressNoisyLoggers() {
     try {
+      // Try Logback first
+      if (isLogbackAvailable()) {
+        suppressNoisyLoggersLogback();
+      } else if (isLog4j2Available()) {
+        suppressNoisyLoggersLog4j2();
+      }
+    } catch (Exception e) {
+      // Ignore errors in logger setup
+    }
+  }
+
+  private boolean isLogbackAvailable() {
+    try {
+      Class.forName("ch.qos.logback.classic.LoggerContext");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  private void suppressNoisyLoggersLogback() {
+    try {
       ch.qos.logback.classic.LoggerContext context =
           (ch.qos.logback.classic.LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
 
@@ -178,6 +200,19 @@ public class TraceRootTracer {
       // Suppress OpenTelemetry logs
       ch.qos.logback.classic.Logger otlpLogger = context.getLogger("io.opentelemetry");
       otlpLogger.setLevel(ch.qos.logback.classic.Level.WARN);
+    } catch (Exception e) {
+      // Ignore errors in logger setup
+    }
+  }
+
+  private void suppressNoisyLoggersLog4j2() {
+    try {
+      org.apache.logging.log4j.core.config.Configurator.setLevel(
+          "org.apache.hc", org.apache.logging.log4j.Level.WARN);
+      org.apache.logging.log4j.core.config.Configurator.setLevel(
+          "software.amazon.awssdk", org.apache.logging.log4j.Level.WARN);
+      org.apache.logging.log4j.core.config.Configurator.setLevel(
+          "io.opentelemetry", org.apache.logging.log4j.Level.WARN);
     } catch (Exception e) {
       // Ignore errors in logger setup
     }
@@ -416,21 +451,70 @@ public class TraceRootTracer {
   /** Setup TraceRoot logging with CloudWatch integration */
   private void setupLogging() {
     try {
-      // Initialize TraceRoot logger with CloudWatch integration
-      TraceRootLogger.initialize(config);
+      // Detect which logging backend is available and initialize accordingly
+      boolean isLog4j2Available = isLog4j2Available();
 
-      if (config.isTracerVerbose()) {
-        logger.debug("[TraceRoot] Logging setup completed");
+      if (isLog4j2Available) {
+        // Use Log4j2 backend
+        try {
+          Class<?> log4j2LoggerClass =
+              Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
+          java.lang.reflect.Method initMethod =
+              log4j2LoggerClass.getDeclaredMethod("initialize", TraceRootConfigImpl.class);
+          initMethod.invoke(null, config);
+
+          if (config.isTracerVerbose()) {
+            logger.debug("[TraceRoot] Logging setup completed with Log4j2 backend");
+          }
+        } catch (Exception e) {
+          logger.warn(
+              "[TraceRoot] Failed to initialize Log4j2 logger, falling back to Logback: "
+                  + e.getMessage());
+          TraceRootLogger.initialize(config);
+        }
+      } else {
+        // Use Logback backend (default)
+        TraceRootLogger.initialize(config);
+
+        if (config.isTracerVerbose()) {
+          logger.debug("[TraceRoot] Logging setup completed with Logback backend");
+        }
       }
     } catch (Exception e) {
       logger.error("[TraceRoot] Failed to setup logging", e);
     }
   }
 
+  /** Check if Log4j2 is available on the classpath */
+  private boolean isLog4j2Available() {
+    try {
+      Class.forName("org.apache.logging.log4j.core.Logger");
+      Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
   /** Shutdown logging appenders */
   private void shutdownLogging() {
     try {
-      TraceRootLogger.shutdown();
+      // Detect which logging backend is being used and shutdown accordingly
+      boolean isLog4j2Available = isLog4j2Available();
+
+      if (isLog4j2Available) {
+        try {
+          Class<?> log4j2LoggerClass =
+              Class.forName("ai.traceroot.sdk.logger.log4j2.Log4j2TraceRootLogger");
+          java.lang.reflect.Method shutdownMethod = log4j2LoggerClass.getDeclaredMethod("shutdown");
+          shutdownMethod.invoke(null);
+        } catch (Exception e) {
+          logger.warn("[TraceRoot] Failed to shutdown Log4j2 logger: " + e.getMessage());
+          e.printStackTrace();
+        }
+      } else {
+        TraceRootLogger.shutdown();
+      }
 
       if (config.isTracerVerbose()) {
         logger.debug("[TraceRoot] Logging shutdown completed");
