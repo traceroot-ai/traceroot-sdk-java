@@ -1,4 +1,4 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.AwsCredentials;
@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.*;
 
 /** Custom Logback appender for sending logs to AWS CloudWatch Logs with trace correlation */
-public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+public class LogbackCloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
   private String logGroupName;
   private String logStreamName;

@@ -1,4 +1,4 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.TencentCredentials;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Custom Logback appender for sending logs to Tencent Cloud CLS with trace correlation using
  * official SDK
  */
-public class TencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+public class LogbackTencentCLSAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
   private String logset; // Equivalent to AWS Log Group (not used in CLS SDK)
   private String topic; // Equivalent to AWS Log Stream - this will be the topic ID

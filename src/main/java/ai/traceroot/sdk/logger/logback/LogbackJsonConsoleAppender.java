@@ -1,4 +1,4 @@
-package ai.traceroot.sdk.logger;
+package ai.traceroot.sdk.logger.logback;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.utils.LogAppenderUtils;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Console appender that outputs logs in TraceRoot JSON format */
-public class JsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
+public class LogbackJsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
 
   private TraceRootConfigImpl config;
   private final ObjectMapper objectMapper =

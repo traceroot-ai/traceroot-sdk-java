@@ -1,6 +1,7 @@
 package ai.traceroot.sdk.logger.log4j2;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
+import ai.traceroot.sdk.logger.TraceRootLoggerInterface;
 import ai.traceroot.sdk.types.LogLevel;
 import ai.traceroot.sdk.utils.LogAppenderUtils;
 import java.util.Map;
@@ -16,7 +17,7 @@ import org.apache.logging.log4j.core.config.Configurator;
  * <p>Usage: Log4j2TraceRootLogger logger = Log4j2TraceRootLogger.getLogger(MyClass.class);
  * logger.info("This log will include trace correlation");
  */
-public class Log4j2TraceRootLogger {
+public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   private final Logger logger;
   private TraceRootConfigImpl config;
