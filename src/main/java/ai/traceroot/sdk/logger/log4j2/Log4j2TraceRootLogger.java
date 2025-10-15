@@ -50,10 +50,8 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
     org.apache.logging.log4j.Level log4j2Level = convertLogLevel(config.getLogLevel());
     Configurator.setRootLevel(log4j2Level);
 
-    // Configure JSON console appender if console logging is enabled
-    if (config.isEnableLogConsoleExport()) {
-      setupJsonConsoleAppender(context, config);
-    }
+    // Always wrap FILE appenders to add TraceRoot JSON format for local file logging
+    wrapFileAppenders(context, config);
 
     // Configure provider-specific cloud appender if cloud logging is enabled
     if (config.isEnableLogCloudExport()) {
@@ -61,31 +59,47 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
     }
   }
 
-  /** Setup JSON console appender programmatically */
-  private static void setupJsonConsoleAppender(LoggerContext context, TraceRootConfigImpl config) {
+  /** Wrap FILE appenders to add TraceRoot JSON format */
+  private static void wrapFileAppenders(LoggerContext context, TraceRootConfigImpl config) {
     try {
-      Log4j2JsonConsoleAppender jsonConsoleAppender =
-          Log4j2JsonConsoleAppender.createAppender("JsonConsoleAppender", null, null, true);
-      if (jsonConsoleAppender != null) {
-        jsonConsoleAppender.setConfig(config);
-        jsonConsoleAppender.start();
+      // Get root logger
+      org.apache.logging.log4j.core.Logger rootLogger =
+          context.getLogger(LogManager.ROOT_LOGGER_NAME);
 
-        // Get root logger
-        org.apache.logging.log4j.core.Logger rootLogger =
-            context.getLogger(LogManager.ROOT_LOGGER_NAME);
-
-        // Remove existing console appender to avoid duplicate logs
-        org.apache.logging.log4j.core.Appender consoleAppender =
-            rootLogger.getAppenders().get("CONSOLE");
-        if (consoleAppender != null) {
-          rootLogger.removeAppender(consoleAppender);
-        }
-
-        // Add our custom console appender
-        rootLogger.addAppender(jsonConsoleAppender);
+      // Debug: print all appenders
+      System.out.println("[TraceRoot] Checking Log4j2 appenders...");
+      for (org.apache.logging.log4j.core.Appender appender : rootLogger.getAppenders().values()) {
+        System.out.println(
+            "[TraceRoot] Found appender: "
+                + appender.getName()
+                + " (type: "
+                + appender.getClass().getName()
+                + ")");
       }
+
+      // Wrap FILE appenders to add TraceRoot JSON format
+      org.apache.logging.log4j.core.Appender fileAppender = rootLogger.getAppenders().get("FILE");
+      if (fileAppender != null && !(fileAppender instanceof Log4j2FileAppenderWrapper)) {
+        System.out.println("[TraceRoot] Wrapping FILE appender: " + fileAppender.getName());
+        System.out.println(
+            "[TraceRoot] FILE appender layout: " + fileAppender.getLayout().toString());
+
+        // Remove the original appender
+        rootLogger.removeAppender(fileAppender);
+
+        // Create wrapper with TraceRoot format
+        Log4j2FileAppenderWrapper wrapper = Log4j2FileAppenderWrapper.wrap(fileAppender);
+        wrapper.setConfig(config);
+        wrapper.start();
+
+        // Add the wrapped appender
+        rootLogger.addAppender(wrapper);
+        System.out.println("[TraceRoot] Added wrapped FILE appender");
+      }
+
     } catch (Exception e) {
-      System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
+      System.err.println("[TraceRoot] Failed to wrap file appenders: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 

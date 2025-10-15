@@ -7,12 +7,12 @@ import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
 
 /**
- * Standalone Java example for TraceRoot SDK with local file logging using Logback
+ * Standalone Java example for TraceRoot SDK with local file logging using Log4j2
  *
  * <p>This example shows how to use TraceRoot SDK with local file logging only (no cloud export).
- * Logs are written to local files using Logback as the logging backend.
+ * Logs are written to local files using Log4j2 as the logging backend.
  *
- * <p>Note: TraceRootLogger will automatically detect and use Logback if it's on the classpath.
+ * <p>Note: TraceRootLogger will automatically detect and use Log4j2 if it's on the classpath.
  */
 public class StandaloneExample {
 
@@ -48,7 +48,7 @@ public class StandaloneExample {
     // Create configuration for local file logging only (no cloud export)
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
-            .serviceName("logback-local-app")
+            .serviceName("log4j2-local-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
