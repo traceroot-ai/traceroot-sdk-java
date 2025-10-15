@@ -45,22 +45,72 @@ public class LogbackJsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
               .atZone(java.time.ZoneOffset.UTC)
               .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
-      String formattedMessage =
+      StringBuilder formattedMessage = new StringBuilder();
+      formattedMessage.append(
           String.format(
               "%s [%s] %-5s %s - %s",
               timestamp,
               event.getThreadName(),
               event.getLevel(),
               event.getLoggerName(),
-              event.getFormattedMessage());
+              event.getFormattedMessage()));
+
+      // Append exception stack trace if present
+      if (event.getThrowableProxy() != null) {
+        formattedMessage.append(System.lineSeparator());
+        formattedMessage.append(getStackTrace(event.getThrowableProxy()));
+      }
 
       // Write directly to the output stream
-      byte[] bytes = (formattedMessage + System.lineSeparator()).getBytes();
+      byte[] bytes = (formattedMessage.toString() + System.lineSeparator()).getBytes();
       getOutputStream().write(bytes);
       getOutputStream().flush();
     } catch (Exception e) {
       addError("Failed to append log event", e);
       e.printStackTrace();
+    }
+  }
+
+  /** Convert ThrowableProxy to stack trace string */
+  private String getStackTrace(ch.qos.logback.classic.spi.IThrowableProxy throwableProxy) {
+    StringBuilder sb = new StringBuilder();
+    appendThrowable(sb, throwableProxy, "");
+    return sb.toString();
+  }
+
+  /** Recursively append throwable and its causes */
+  private void appendThrowable(
+      StringBuilder sb, ch.qos.logback.classic.spi.IThrowableProxy tp, String prefix) {
+    if (tp == null) {
+      return;
+    }
+
+    sb.append(prefix).append(tp.getClassName()).append(": ").append(tp.getMessage());
+    ch.qos.logback.classic.spi.StackTraceElementProxy[] stepArray =
+        tp.getStackTraceElementProxyArray();
+    if (stepArray != null) {
+      for (ch.qos.logback.classic.spi.StackTraceElementProxy step : stepArray) {
+        sb.append(System.lineSeparator());
+        sb.append(prefix).append("\t").append(step.toString());
+      }
+    }
+
+    // Handle suppressed exceptions
+    ch.qos.logback.classic.spi.IThrowableProxy[] suppressed = tp.getSuppressed();
+    if (suppressed != null) {
+      for (ch.qos.logback.classic.spi.IThrowableProxy suppressedTp : suppressed) {
+        sb.append(System.lineSeparator());
+        sb.append(prefix).append("Suppressed: ");
+        appendThrowable(sb, suppressedTp, prefix + "\t");
+      }
+    }
+
+    // Handle cause
+    ch.qos.logback.classic.spi.IThrowableProxy cause = tp.getCause();
+    if (cause != null) {
+      sb.append(System.lineSeparator());
+      sb.append(prefix).append("Caused by: ");
+      appendThrowable(sb, cause, prefix);
     }
   }
 

@@ -55,21 +55,74 @@ public class Log4j2JsonConsoleAppender extends AbstractAppender {
               .atZone(java.time.ZoneOffset.UTC)
               .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
-      String formattedMessage =
+      StringBuilder formattedMessage = new StringBuilder();
+      formattedMessage.append(
           String.format(
               "%s [%s] %-5s %s - %s",
               timestamp,
               event.getThreadName(),
               event.getLevel(),
               event.getLoggerName(),
-              event.getMessage().getFormattedMessage());
+              event.getMessage().getFormattedMessage()));
+
+      // Append exception stack trace if present
+      if (event.getThrown() != null) {
+        formattedMessage.append(System.lineSeparator());
+        formattedMessage.append(formatThrowable(event.getThrown()));
+      }
 
       // Write directly to stdout
-      byte[] bytes = (formattedMessage + System.lineSeparator()).getBytes(StandardCharsets.UTF_8);
+      byte[] bytes =
+          (formattedMessage.toString() + System.lineSeparator()).getBytes(StandardCharsets.UTF_8);
       System.out.write(bytes);
       System.out.flush();
     } catch (Exception e) {
       LOGGER.error("Failed to append log event", e);
+    }
+  }
+
+  /** Format throwable to string including stack trace and causes */
+  private String formatThrowable(Throwable throwable) {
+    if (throwable == null) {
+      return "";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    appendThrowable(sb, throwable, "");
+    return sb.toString();
+  }
+
+  /** Recursively append throwable and its causes */
+  private void appendThrowable(StringBuilder sb, Throwable t, String prefix) {
+    if (t == null) {
+      return;
+    }
+
+    sb.append(prefix).append(t.getClass().getName()).append(": ").append(t.getMessage());
+    StackTraceElement[] stackTrace = t.getStackTrace();
+    if (stackTrace != null) {
+      for (StackTraceElement element : stackTrace) {
+        sb.append(System.lineSeparator());
+        sb.append(prefix).append("\tat ").append(element.toString());
+      }
+    }
+
+    // Handle suppressed exceptions
+    Throwable[] suppressed = t.getSuppressed();
+    if (suppressed != null) {
+      for (Throwable suppressedT : suppressed) {
+        sb.append(System.lineSeparator());
+        sb.append(prefix).append("Suppressed: ");
+        appendThrowable(sb, suppressedT, prefix + "\t");
+      }
+    }
+
+    // Handle cause
+    Throwable cause = t.getCause();
+    if (cause != null) {
+      sb.append(System.lineSeparator());
+      sb.append(prefix).append("Caused by: ");
+      appendThrowable(sb, cause, prefix);
     }
   }
 

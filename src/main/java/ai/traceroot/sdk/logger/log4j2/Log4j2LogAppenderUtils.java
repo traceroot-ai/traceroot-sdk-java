@@ -76,8 +76,12 @@ public class Log4j2LogAppenderUtils {
     // Log level (lowercase)
     logData.put("level", event.getLevel().name().toLowerCase());
 
-    // Message
-    logData.put("message", event.getMessage().getFormattedMessage());
+    // Message - include exception if present
+    String message = event.getMessage().getFormattedMessage();
+    if (event.getThrown() != null) {
+      message = message + "\n" + formatThrowable(event.getThrown());
+    }
+    logData.put("message", message);
 
     // Timestamp in ISO format
     Instant instant = Instant.ofEpochMilli(event.getTimeMillis());
@@ -85,6 +89,56 @@ public class Log4j2LogAppenderUtils {
     logData.put("timestamp", timestamp);
 
     return logData;
+  }
+
+  /**
+   * Format throwable to string including stack trace and causes
+   *
+   * @param throwable The throwable from log event
+   * @return Formatted stack trace string
+   */
+  public static String formatThrowable(Throwable throwable) {
+    if (throwable == null) {
+      return "";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    appendThrowable(sb, throwable, "");
+    return sb.toString();
+  }
+
+  /** Recursively append throwable and its causes */
+  private static void appendThrowable(StringBuilder sb, Throwable t, String prefix) {
+    if (t == null) {
+      return;
+    }
+
+    sb.append(prefix).append(t.getClass().getName()).append(": ").append(t.getMessage());
+    StackTraceElement[] stackTrace = t.getStackTrace();
+    if (stackTrace != null) {
+      for (StackTraceElement element : stackTrace) {
+        sb.append("\n");
+        sb.append(prefix).append("\tat ").append(element.toString());
+      }
+    }
+
+    // Handle suppressed exceptions
+    Throwable[] suppressed = t.getSuppressed();
+    if (suppressed != null) {
+      for (Throwable suppressedT : suppressed) {
+        sb.append("\n");
+        sb.append(prefix).append("Suppressed: ");
+        appendThrowable(sb, suppressedT, prefix + "\t");
+      }
+    }
+
+    // Handle cause
+    Throwable cause = t.getCause();
+    if (cause != null) {
+      sb.append("\n");
+      sb.append(prefix).append("Caused by: ");
+      appendThrowable(sb, cause, prefix);
+    }
   }
 
   /**

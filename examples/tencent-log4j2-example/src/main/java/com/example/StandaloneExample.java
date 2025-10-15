@@ -43,6 +43,9 @@ public class StandaloneExample {
 
     // Call additional business logic
     performAdditionalLogic();
+
+    // Demonstrate new SLF4J-compatible logging methods
+    demonstrateNewLoggingMethods();
   }
 
   /**
@@ -63,7 +66,7 @@ public class StandaloneExample {
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for Tencent CLS export
-            .logLevel(LogLevel.INFO)
+            .logLevel(LogLevel.TRACE)
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
 
@@ -97,6 +100,36 @@ public class StandaloneExample {
   @Trace
   private static void performAdditionalLogic() {
     logger.info("Performing additional business logic...");
+  }
+
+  /** Demonstrate new SLF4J-compatible logging methods */
+  @Trace
+  private static void demonstrateNewLoggingMethods() {
+    // DEBUG with exception
+    try {
+      throw new IllegalArgumentException("Sample exception for demonstration");
+    } catch (Exception e) {
+      logger.trace("Caught exception during processing", e);
+    }
+
+    // INFO with exception
+    try {
+      throw new RuntimeException("Another sample exception");
+    } catch (Exception e) {
+      logger.info("Runtime exception occurred", e);
+    }
+
+    // Parameterized logging examples (performance-optimized)
+    String userId = "user123";
+    String action = "update";
+    logger.info("User {} performed action {}", userId, action);
+    logger.debug("Processing request for user {}", userId);
+
+    // Three parameters example
+    String resource = "payment-service";
+    long duration = 150;
+    logger.info(
+        "User {} performed action {} on resource {} in {}ms", userId, action, resource, duration);
   }
 
   /** Cleanup - should be called before application shutdown Similar to Sentry shutdown pattern */

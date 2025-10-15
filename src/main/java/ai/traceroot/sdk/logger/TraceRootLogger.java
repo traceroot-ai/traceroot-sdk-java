@@ -112,6 +112,21 @@ public class TraceRootLogger implements TraceRootLoggerInterface {
   // Delegate all methods to the implementation
 
   @Override
+  public void trace(String message) {
+    delegate.trace(message);
+  }
+
+  @Override
+  public void trace(String format, Object... args) {
+    delegate.trace(format, args);
+  }
+
+  @Override
+  public void trace(String message, Throwable throwable) {
+    delegate.trace(message, throwable);
+  }
+
+  @Override
   public void debug(String message) {
     delegate.debug(message);
   }
@@ -122,6 +137,11 @@ public class TraceRootLogger implements TraceRootLoggerInterface {
   }
 
   @Override
+  public void debug(String message, Throwable throwable) {
+    delegate.debug(message, throwable);
+  }
+
+  @Override
   public void info(String message) {
     delegate.info(message);
   }
@@ -129,6 +149,11 @@ public class TraceRootLogger implements TraceRootLoggerInterface {
   @Override
   public void info(String format, Object... args) {
     delegate.info(format, args);
+  }
+
+  @Override
+  public void info(String message, Throwable throwable) {
+    delegate.info(message, throwable);
   }
 
   @Override
@@ -164,6 +189,11 @@ public class TraceRootLogger implements TraceRootLoggerInterface {
   @Override
   public void logWithContext(LogLevel level, String message, Map<String, String> context) {
     delegate.logWithContext(level, message, context);
+  }
+
+  @Override
+  public boolean isTraceEnabled() {
+    return delegate.isTraceEnabled();
   }
 
   @Override

@@ -9,11 +9,13 @@ import ai.traceroot.sdk.types.Provider;
 import ai.traceroot.sdk.types.TencentCredentials;
 
 /**
- * Standalone Java example for TraceRoot SDK with Tencent Cloud CLS
+ * Standalone Java example for TraceRoot SDK with Tencent Cloud CLS using Logback
  *
  * <p>This example shows how to manually initialize TraceRoot SDK with Tencent Cloud provider for
- * logging to Tencent Cloud CLS (Cloud Log Service), similar to how Sentry is initialized in Java
- * applications.
+ * logging to Tencent Cloud CLS (Cloud Log Service) using Logback as the logging backend, similar to
+ * how Sentry is initialized in Java applications.
+ *
+ * <p>Note: TraceRootLogger will automatically detect and use Logback if it's on the classpath.
  */
 public class StandaloneExample {
 
@@ -41,6 +43,9 @@ public class StandaloneExample {
 
     // Call additional business logic
     performAdditionalLogic();
+
+    // Demonstrate new SLF4J-compatible logging methods
+    demonstrateNewLoggingMethods();
   }
 
   /**
@@ -51,7 +56,7 @@ public class StandaloneExample {
     // Create configuration for Tencent Cloud provider
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
-            .serviceName("tencent-standalone-app")
+            .serviceName("tencent-logback-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
@@ -61,7 +66,7 @@ public class StandaloneExample {
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for Tencent CLS export
-            .logLevel(LogLevel.INFO)
+            .logLevel(LogLevel.TRACE)
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
 
@@ -95,6 +100,36 @@ public class StandaloneExample {
   @Trace
   private static void performAdditionalLogic() {
     logger.info("Performing additional business logic...");
+  }
+
+  /** Demonstrate new SLF4J-compatible logging methods */
+  @Trace
+  private static void demonstrateNewLoggingMethods() {
+    // DEBUG with exception
+    try {
+      throw new IllegalArgumentException("Sample exception for demonstration");
+    } catch (Exception e) {
+      logger.trace("Caught exception during processing", e);
+    }
+
+    // INFO with exception
+    try {
+      throw new RuntimeException("Another sample exception");
+    } catch (Exception e) {
+      logger.info("Runtime exception occurred", e);
+    }
+
+    // Parameterized logging examples (performance-optimized)
+    String userId = "user123";
+    String action = "update";
+    logger.info("User {} performed action {}", userId, action);
+    logger.debug("Processing request for user {}", userId);
+
+    // Three parameters example
+    String resource = "payment-service";
+    long duration = 150;
+    logger.info(
+        "User {} performed action {} on resource {} in {}ms", userId, action, resource, duration);
   }
 
   /** Cleanup - should be called before application shutdown Similar to Sentry shutdown pattern */
