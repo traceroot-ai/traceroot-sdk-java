@@ -7,7 +7,7 @@ public final class TraceRootConstants {
   public static final String TELEMETRY_SDK_LANGUAGE_UNDERSCORE = "telemetry_sdk_language";
 
   // API Configuration
-  public static final String DEFAULT_API_BASE_URL = "https://api.test.traceroot.ai";
+  public static final String DEFAULT_API_BASE_URL = "https://api.prod1.traceroot.ai";
   public static final String CREDENTIAL_ENDPOINT = "/v1/verify/credentials";
 
   // HTTP Configuration
