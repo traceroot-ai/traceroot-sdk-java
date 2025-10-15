@@ -1,69 +1,67 @@
-package ai.traceroot.sdk.logger.logback;
+package ai.traceroot.sdk.logger.log4j2;
 
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
-import ai.traceroot.sdk.utils.LogAppenderUtils;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.message.SimpleMessage;
 
-/**
- * Wrapper appender that intercepts file appenders and reformats output to TraceRoot JSON key-value
- * format
- */
-public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILoggingEvent> {
+/** Wrapper appender that intercepts file appenders and reformats output to TraceRoot JSON format */
+public class Log4j2FileAppenderWrapper extends AbstractAppender {
 
   private TraceRootConfigImpl config;
-  private Appender<ILoggingEvent> delegate;
+  private Appender delegate;
 
-  public LogbackFileAppenderWrapper(Appender<ILoggingEvent> delegate) {
+  protected Log4j2FileAppenderWrapper(
+      String name, Filter filter, Layout<?> layout, Appender delegate) {
+    super(name, filter, layout, true, Property.EMPTY_ARRAY);
     this.delegate = delegate;
   }
 
-  @Override
-  public void start() {
-    // Make sure delegate is started
-    if (!delegate.isStarted()) {
-      delegate.start();
-    }
-    super.start();
+  public static Log4j2FileAppenderWrapper wrap(Appender delegate) {
+    return new Log4j2FileAppenderWrapper(delegate.getName(), null, null, delegate);
   }
 
   @Override
-  protected void append(ILoggingEvent event) {
+  public void append(LogEvent event) {
     try {
-      // Create a custom logging event with our TraceRoot format
+      // Create a custom logging event with our TraceRoot JSON format
       String formattedMessage = formatAsTraceRootJson(event);
 
-      // Create a new logging event with the formatted message
-      ch.qos.logback.classic.spi.LoggingEvent wrappedEvent =
-          new ch.qos.logback.classic.spi.LoggingEvent(
-              event.getLoggerName(),
-              (ch.qos.logback.classic.Logger)
-                  org.slf4j.LoggerFactory.getLogger(event.getLoggerName()),
-              event.getLevel(),
-              formattedMessage,
-              null,
-              null);
-      wrappedEvent.setTimeStamp(event.getTimeStamp());
-      wrappedEvent.setThreadName(event.getThreadName());
+      // Create a minimal log event with ONLY the formatted JSON message
+      // Use a blank logger name to avoid prefix formatting
+      LogEvent wrappedEvent =
+          Log4jLogEvent.newBuilder()
+              .setLoggerName("")
+              .setLoggerFqcn("")
+              .setLevel(org.apache.logging.log4j.Level.OFF) // Use OFF to avoid level formatting
+              .setMessage(new SimpleMessage(formattedMessage))
+              .setThreadName("")
+              .setTimeMillis(event.getTimeMillis())
+              .setThrown(null)
+              .setContextStack(event.getContextStack())
+              .build();
 
       // Pass to the delegate appender
-      delegate.doAppend(wrappedEvent);
+      delegate.append(wrappedEvent);
     } catch (Exception e) {
-      System.err.println("[TraceRoot] Failed to wrap log event: " + e.getMessage());
-      e.printStackTrace();
+      error("Failed to wrap log event: " + e.getMessage(), e);
       // Fallback to delegate
-      delegate.doAppend(event);
+      delegate.append(event);
     }
   }
 
-  private String formatAsTraceRootJson(ILoggingEvent event) {
+  private String formatAsTraceRootJson(LogEvent event) {
     Map<String, Object> logData = createLogData(event);
 
     // Format as JSON for structured logging (parseable by log agents)
@@ -93,7 +91,7 @@ public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILogg
     return json.toString();
   }
 
-  private Map<String, Object> createLogData(ILoggingEvent event) {
+  private Map<String, Object> createLogData(LogEvent event) {
     // Use LinkedHashMap to maintain insertion order
     Map<String, Object> logData = new LinkedHashMap<>();
 
@@ -155,11 +153,11 @@ public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILogg
     }
 
     // Stack trace (caller information)
-    String stackTrace = LogAppenderUtils.getCallerStackTrace(event, config);
+    String stackTrace = Log4j2LogAppenderUtils.getCallerStackTrace(event, config);
     logData.put("stack_trace", stackTrace);
 
     // Message
-    logData.put("message", event.getFormattedMessage());
+    logData.put("message", event.getMessage().getFormattedMessage());
 
     if (config != null) {
       logData.put(
@@ -170,19 +168,18 @@ public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILogg
     }
 
     // Exception/Throwable if present
-    if (event.getThrowableProxy() != null) {
-      ch.qos.logback.classic.spi.IThrowableProxy throwableProxy = event.getThrowableProxy();
+    if (event.getThrown() != null) {
+      Throwable throwable = event.getThrown();
       StringBuilder exceptionStr = new StringBuilder();
       exceptionStr
-          .append(throwableProxy.getClassName())
+          .append(throwable.getClass().getName())
           .append(": ")
-          .append(throwableProxy.getMessage());
+          .append(throwable.getMessage());
 
       // Add stack trace elements
-      ch.qos.logback.classic.spi.StackTraceElementProxy[] stackTraceElements =
-          throwableProxy.getStackTraceElementProxyArray();
+      StackTraceElement[] stackTraceElements = throwable.getStackTrace();
       if (stackTraceElements != null) {
-        for (ch.qos.logback.classic.spi.StackTraceElementProxy element : stackTraceElements) {
+        for (StackTraceElement element : stackTraceElements) {
           exceptionStr.append("\\n\\tat ").append(element.toString());
         }
       }
@@ -192,7 +189,7 @@ public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILogg
 
     // Timestamp in the same format as the example: 2025-10-15 04:31:25,010
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
-    String timestamp = sdf.format(new Date(event.getTimeStamp()));
+    String timestamp = sdf.format(new Date(event.getTimeMillis()));
     logData.put("timestamp", timestamp);
 
     return logData;
@@ -200,6 +197,15 @@ public class LogbackFileAppenderWrapper extends UnsynchronizedAppenderBase<ILogg
 
   public void setConfig(TraceRootConfigImpl config) {
     this.config = config;
+  }
+
+  @Override
+  public void start() {
+    // Make sure delegate is started
+    if (!delegate.isStarted()) {
+      delegate.start();
+    }
+    super.start();
   }
 
   @Override
