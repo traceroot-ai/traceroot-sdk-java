@@ -33,3 +33,6 @@ maven-status/
 venv/
 
 .DS_Store
+# Environment variables
+.env
+examples/**/.env
