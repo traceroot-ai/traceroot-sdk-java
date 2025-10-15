@@ -134,6 +134,8 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
     }
 
     switch (logLevel) {
+      case TRACE:
+        return org.apache.logging.log4j.Level.TRACE;
       case DEBUG:
         return org.apache.logging.log4j.Level.DEBUG;
       case INFO:
@@ -151,42 +153,77 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   // Logging methods with automatic trace correlation
 
+  @Override
+  public void trace(String message) {
+    logWithTraceCorrelation(() -> logger.trace(message));
+  }
+
+  @Override
+  public void trace(String format, Object... args) {
+    logWithTraceCorrelation(() -> logger.trace(format, args));
+  }
+
+  @Override
+  public void trace(String message, Throwable throwable) {
+    logWithTraceCorrelation(() -> logger.trace(message, throwable));
+  }
+
+  @Override
   public void debug(String message) {
     logWithTraceCorrelation(() -> logger.debug(message));
   }
 
+  @Override
   public void debug(String format, Object... args) {
     logWithTraceCorrelation(() -> logger.debug(format, args));
   }
 
+  @Override
+  public void debug(String message, Throwable throwable) {
+    logWithTraceCorrelation(() -> logger.debug(message, throwable));
+  }
+
+  @Override
   public void info(String message) {
     logWithTraceCorrelation(() -> logger.info(message));
   }
 
+  @Override
   public void info(String format, Object... args) {
     logWithTraceCorrelation(() -> logger.info(format, args));
   }
 
+  @Override
+  public void info(String message, Throwable throwable) {
+    logWithTraceCorrelation(() -> logger.info(message, throwable));
+  }
+
+  @Override
   public void warn(String message) {
     logWithTraceCorrelation(() -> logger.warn(message));
   }
 
+  @Override
   public void warn(String format, Object... args) {
     logWithTraceCorrelation(() -> logger.warn(format, args));
   }
 
+  @Override
   public void warn(String message, Throwable throwable) {
     logWithTraceCorrelation(() -> logger.warn(message, throwable));
   }
 
+  @Override
   public void error(String message) {
     logWithTraceCorrelation(() -> logger.error(message));
   }
 
+  @Override
   public void error(String format, Object... args) {
     logWithTraceCorrelation(() -> logger.error(format, args));
   }
 
+  @Override
   public void error(String message, Throwable throwable) {
     logWithTraceCorrelation(() -> logger.error(message, throwable));
   }
@@ -271,22 +308,32 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   // Delegate methods for compatibility
 
+  @Override
+  public boolean isTraceEnabled() {
+    return logger.isTraceEnabled();
+  }
+
+  @Override
   public boolean isDebugEnabled() {
     return logger.isDebugEnabled();
   }
 
+  @Override
   public boolean isInfoEnabled() {
     return logger.isInfoEnabled();
   }
 
+  @Override
   public boolean isWarnEnabled() {
     return logger.isWarnEnabled();
   }
 
+  @Override
   public boolean isErrorEnabled() {
     return logger.isErrorEnabled();
   }
 
+  @Override
   public String getName() {
     return logger.getName();
   }

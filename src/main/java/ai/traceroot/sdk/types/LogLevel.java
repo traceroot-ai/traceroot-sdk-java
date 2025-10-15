@@ -1,6 +1,7 @@
 package ai.traceroot.sdk.types;
 
 public enum LogLevel {
+  TRACE,
   DEBUG,
   INFO,
   WARN,

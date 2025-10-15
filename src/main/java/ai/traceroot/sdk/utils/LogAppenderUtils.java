@@ -358,8 +358,12 @@ public class LogAppenderUtils {
     // Log level
     logData.put("level", event.getLevel().toString().toLowerCase());
 
-    // Message
-    logData.put("message", event.getFormattedMessage());
+    // Message - include exception if present
+    String message = event.getFormattedMessage();
+    if (event.getThrowableProxy() != null) {
+      message = message + "\n" + formatThrowable(event.getThrowableProxy());
+    }
+    logData.put("message", message);
 
     // Timestamp in UTC
     java.time.Instant instant = java.time.Instant.ofEpochMilli(event.getTimeStamp());
@@ -369,6 +373,58 @@ public class LogAppenderUtils {
     logData.put("timestamp", formattedTimestamp);
 
     return logData;
+  }
+
+  /**
+   * Format throwable to string including stack trace and causes
+   *
+   * @param throwableProxy The throwable proxy from log event
+   * @return Formatted stack trace string
+   */
+  public static String formatThrowable(ch.qos.logback.classic.spi.IThrowableProxy throwableProxy) {
+    if (throwableProxy == null) {
+      return "";
+    }
+
+    StringBuilder sb = new StringBuilder();
+    appendThrowable(sb, throwableProxy, "");
+    return sb.toString();
+  }
+
+  /** Recursively append throwable and its causes */
+  private static void appendThrowable(
+      StringBuilder sb, ch.qos.logback.classic.spi.IThrowableProxy tp, String prefix) {
+    if (tp == null) {
+      return;
+    }
+
+    sb.append(prefix).append(tp.getClassName()).append(": ").append(tp.getMessage());
+    ch.qos.logback.classic.spi.StackTraceElementProxy[] stepArray =
+        tp.getStackTraceElementProxyArray();
+    if (stepArray != null) {
+      for (ch.qos.logback.classic.spi.StackTraceElementProxy step : stepArray) {
+        sb.append("\n");
+        sb.append(prefix).append("\t").append(step.toString());
+      }
+    }
+
+    // Handle suppressed exceptions
+    ch.qos.logback.classic.spi.IThrowableProxy[] suppressed = tp.getSuppressed();
+    if (suppressed != null) {
+      for (ch.qos.logback.classic.spi.IThrowableProxy suppressedTp : suppressed) {
+        sb.append("\n");
+        sb.append(prefix).append("Suppressed: ");
+        appendThrowable(sb, suppressedTp, prefix + "\t");
+      }
+    }
+
+    // Handle cause
+    ch.qos.logback.classic.spi.IThrowableProxy cause = tp.getCause();
+    if (cause != null) {
+      sb.append("\n");
+      sb.append(prefix).append("Caused by: ");
+      appendThrowable(sb, cause, prefix);
+    }
   }
 
   /**

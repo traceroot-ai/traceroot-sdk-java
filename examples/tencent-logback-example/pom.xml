@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>traceroot-standalone-example</artifactId>
+    <artifactId>traceroot-logback-example</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>TraceRoot Standalone Example</name>
-    <description>Standalone Java example for TraceRoot SDK</description>
+    <name>TraceRoot Logback Example</name>
+    <description>Standalone Java example for TraceRoot SDK with Logback</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
