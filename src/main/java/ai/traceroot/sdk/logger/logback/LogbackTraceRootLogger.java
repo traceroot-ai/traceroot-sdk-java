@@ -79,26 +79,62 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
   /** Setup JSON console appender programmatically */
   private static void setupJsonConsoleAppender(LoggerContext context, TraceRootConfigImpl config) {
     try {
-      LogbackJsonConsoleAppender jsonConsoleAppender = new LogbackJsonConsoleAppender();
-      jsonConsoleAppender.setContext(context);
-      jsonConsoleAppender.setConfig(config);
-      jsonConsoleAppender.setName("JsonConsoleAppender");
-
-      // Set the target to System.out (required for ConsoleAppender to start)
-      jsonConsoleAppender.setTarget("System.out");
-
-      jsonConsoleAppender.start();
-
-      // Remove existing console appender and add JSON console appender
       Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
 
-      // Remove all existing appenders
-      rootLogger.detachAndStopAllAppenders();
+      // Debug: print all appenders
+      System.out.println("[TraceRoot] Checking appenders...");
+      java.util.Iterator<ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent>>
+          debugIter = rootLogger.iteratorForAppenders();
+      while (debugIter.hasNext()) {
+        ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent> app =
+            debugIter.next();
+        System.out.println(
+            "[TraceRoot] Found appender: "
+                + app.getName()
+                + " (type: "
+                + app.getClass().getName()
+                + ")");
+      }
 
-      rootLogger.addAppender(jsonConsoleAppender);
+      // Iterate through existing appenders to wrap FILE appenders with TraceRoot format
+      java.util.List<ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent>>
+          appendersToWrap = new java.util.ArrayList<>();
+      java.util.Iterator<ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent>>
+          iter = rootLogger.iteratorForAppenders();
+      while (iter.hasNext()) {
+        ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+            iter.next();
+
+        // Wrap FILE appenders to add TraceRoot JSON format
+        if ("FILE".equals(appender.getName())
+            && !(appender instanceof LogbackFileAppenderWrapper)) {
+          System.out.println("[TraceRoot] Will wrap FILE appender: " + appender.getName());
+          appendersToWrap.add(appender);
+        }
+      }
+
+      // Wrap the FILE appenders
+      for (ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent> appender :
+          appendersToWrap) {
+        System.out.println("[TraceRoot] Wrapping appender: " + appender.getName());
+        // Remove the original appender
+        rootLogger.detachAppender(appender);
+
+        // Create wrapper with TraceRoot format
+        LogbackFileAppenderWrapper wrapper = new LogbackFileAppenderWrapper(appender);
+        wrapper.setContext(context);
+        wrapper.setConfig(config);
+        wrapper.setName("FILE"); // Keep the same name
+        wrapper.start();
+
+        // Add the wrapped appender
+        rootLogger.addAppender(wrapper);
+        System.out.println("[TraceRoot] Added wrapped FILE appender");
+      }
 
     } catch (Exception e) {
-      System.err.println("[TraceRoot] Failed to setup JSON console appender: " + e.getMessage());
+      System.err.println("[TraceRoot] Failed to wrap file appenders: " + e.getMessage());
+      e.printStackTrace();
     }
 
     // Update all existing logger instances with the new config
