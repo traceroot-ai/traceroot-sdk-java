@@ -7,6 +7,7 @@ import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
 import ai.traceroot.sdk.types.Provider;
 import ai.traceroot.sdk.types.TencentCredentials;
+import io.github.cdimascio.dotenv.Dotenv;
 
 /**
  * Standalone Java example for TraceRoot SDK with Tencent Cloud CLS using Log4j2
@@ -22,8 +23,11 @@ public class StandaloneExample {
   private static final TraceRootLogger logger = TraceRootLogger.getLogger(StandaloneExample.class);
 
   public static void main(String[] args) {
+    // Load .env file (optional - falls back to system environment variables)
+    Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+
     // Manual initialization (like Sentry.init())
-    initializeTraceRoot();
+    initializeTraceRoot(dotenv);
 
     try {
       // Execute main application logic
@@ -52,7 +56,7 @@ public class StandaloneExample {
    * Manual TraceRoot initialization with Tencent Cloud CLS - should be called early in application
    * lifecycle Similar to Sentry.init() pattern
    */
-  private static void initializeTraceRoot() {
+  private static void initializeTraceRoot(Dotenv dotenv) {
     // Create configuration for Tencent Cloud provider
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
@@ -67,20 +71,20 @@ public class StandaloneExample {
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for Tencent CLS export
             .logLevel(LogLevel.TRACE)
-            .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
+            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
 
     // Configure Tencent Cloud credentials (required for Tencent provider)
     TencentCredentials tencentCredentials = new TencentCredentials();
     tencentCredentials.setSecretId(
-        System.getenv("TENCENT_SECRET_ID")); // Required: Get from environment
+        dotenv.get("TENCENT_SECRET_ID", System.getenv("TENCENT_SECRET_ID"))); // Get from .env or environment
     tencentCredentials.setSecretKey(
-        System.getenv("TENCENT_SECRET_KEY")); // Required: Get from environment
+        dotenv.get("TENCENT_SECRET_KEY", System.getenv("TENCENT_SECRET_KEY"))); // Get from .env or environment
     tencentCredentials.setRegion("ap-hongkong"); // Optional: defaults to ap-hongkong
     tencentCredentials.setLogset(
-        System.getenv("TENCENT_LOGSET")); // Optional: CLS logset name (like AWS log group)
+        dotenv.get("TENCENT_LOGSET", System.getenv("TENCENT_LOGSET"))); // Get from .env or environment
     tencentCredentials.setTraceToken(
-        System.getenv("TRACE_TOKEN")); // Required: APM trace token for authentication
+        dotenv.get("TRACE_TOKEN", System.getenv("TRACE_TOKEN"))); // Get from .env or environment
 
     // Set credentials on config
     config.setTencentCredentials(tencentCredentials);
