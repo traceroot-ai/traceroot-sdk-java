@@ -3,6 +3,7 @@ package com.example;
 import ai.traceroot.sdk.TraceRootSDK;
 import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.types.LogLevel;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -25,22 +26,28 @@ public class App {
    */
   @EventListener(ApplicationReadyEvent.class)
   public void initializeTraceRoot() {
+    // Load .env file (optional - falls back to system environment variables)
+    Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
             .serviceName("minitasks-spring-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
-            .token(System.getenv("TRACEROOT_TOKEN"))
+            .token(dotenv.get("TRACEROOT_TOKEN", System.getenv("TRACEROOT_TOKEN")))
             .environment("development")
             .region("us-west-2")
             .enableSpanConsoleExport(false)
             .enableLogConsoleExport(true)
-            .enableSpanCloudExport(true)
-            .enableLogCloudExport(true)
+            .enableSpanCloudExport(
+                dotenv.get("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT")))
+            .enableLogCloudExport(
+                dotenv.get("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT")))
             .localMode(false)
             .logLevel(LogLevel.INFO)
-            .rootPath(System.getenv("TRACEROOT_ROOT_PATH"))
+            .tracerVerbose(true)
+            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH")))
             .build();
 
     // Initialize SDK after Spring Boot has fully started
