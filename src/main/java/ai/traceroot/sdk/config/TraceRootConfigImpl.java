@@ -100,6 +100,11 @@ public class TraceRootConfigImpl implements TraceRootConfig {
       builder.enableLogCloudExport(Boolean.parseBoolean(logCloudExport));
     }
 
+    String otlpEndpoint = System.getenv(TraceRootConstants.ENV_OTLP_ENDPOINT);
+    if (otlpEndpoint != null) {
+      builder.otlpEndpoint(otlpEndpoint);
+    }
+
     return builder;
   }
 
