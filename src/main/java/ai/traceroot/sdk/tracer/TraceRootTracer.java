@@ -246,14 +246,30 @@ public class TraceRootTracer {
         config.setInternalName(credentials.getHash());
       }
 
+      // Only use AWS-provided OTLP endpoint if user hasn't specified a custom one
       if (credentials.getOtlpEndpoint() != null) {
-        config.setOtlpEndpoint(credentials.getOtlpEndpoint());
+        String currentEndpoint = config.getOtlpEndpoint();
+        boolean isDefaultEndpoint =
+            currentEndpoint == null || currentEndpoint.equals("http://localhost:4318/v1/traces");
+
+        if (isDefaultEndpoint) {
+          config.setOtlpEndpoint(credentials.getOtlpEndpoint());
+          if (config.isTracerVerbose()) {
+            logger.debug(
+                "[TraceRoot] Using AWS-provided OTLP endpoint: {}", credentials.getOtlpEndpoint());
+          }
+        } else {
+          if (config.isTracerVerbose()) {
+            logger.debug(
+                "[TraceRoot] Using user-specified OTLP endpoint: {} (ignoring AWS-provided: {})",
+                currentEndpoint,
+                credentials.getOtlpEndpoint());
+          }
+        }
       }
 
       if (config.isTracerVerbose()) {
-        logger.debug(
-            "[TraceRoot] AWS credentials fetched successfully. OTLP endpoint: {}",
-            credentials.getOtlpEndpoint());
+        logger.debug("[TraceRoot] AWS credentials fetched successfully");
       }
     } else {
       if (config.isTracerVerbose()) {

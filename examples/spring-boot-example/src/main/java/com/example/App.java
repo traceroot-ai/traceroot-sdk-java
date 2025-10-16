@@ -41,9 +41,13 @@ public class App {
             .enableSpanConsoleExport(false)
             .enableLogConsoleExport(true)
             .enableSpanCloudExport(
-                dotenv.get("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT")))
+                dotenv.get(
+                    "TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT",
+                    System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT")))
             .enableLogCloudExport(
-                dotenv.get("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT")))
+                dotenv.get(
+                    "TRACEROOT_ENABLE_LOG_CLOUD_EXPORT",
+                    System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT")))
             .localMode(false)
             .logLevel(LogLevel.INFO)
             .tracerVerbose(true)

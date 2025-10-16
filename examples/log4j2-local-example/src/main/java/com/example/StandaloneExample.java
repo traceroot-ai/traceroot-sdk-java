@@ -22,8 +22,21 @@ public class StandaloneExample {
     // Manual initialization (like Sentry.init())
     initializeTraceRoot();
 
-    // Execute main application logic
-    runApplicationLogic();
+    try {
+      // Execute main application logic
+      runApplicationLogic();
+    } finally {
+      // Cleanup before application exit
+      shutdown();
+    }
+  }
+
+  /** Cleanup - should be called before application shutdown */
+  private static void shutdown() {
+    // Force flush any pending spans/logs
+    TraceRootSDK.forceFlush();
+    // Shutdown SDK
+    TraceRootSDK.shutdown();
   }
 
   /** Main application logic with automatic tracing and logging */
@@ -55,9 +68,10 @@ public class StandaloneExample {
             .environment("development")
             .enableSpanConsoleExport(false) // Disable console export for spans
             .enableLogConsoleExport(true) // Enable console logging
-            .enableSpanCloudExport(false) // Disable cloud export for spans
+            .enableSpanCloudExport(true) // Enable tracing export to OTLP endpoint
             .enableLogCloudExport(false) // Disable cloud export for logs (local file only)
             .logLevel(LogLevel.TRACE)
+            .otlpEndpoint(System.getenv("TRACEROOT_OTLP_ENDPOINT")) // Get from environment
             .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
             .build();
 

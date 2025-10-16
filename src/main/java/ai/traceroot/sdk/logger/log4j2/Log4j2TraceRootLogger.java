@@ -66,24 +66,9 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
       org.apache.logging.log4j.core.Logger rootLogger =
           context.getLogger(LogManager.ROOT_LOGGER_NAME);
 
-      // Debug: print all appenders
-      System.out.println("[TraceRoot] Checking Log4j2 appenders...");
-      for (org.apache.logging.log4j.core.Appender appender : rootLogger.getAppenders().values()) {
-        System.out.println(
-            "[TraceRoot] Found appender: "
-                + appender.getName()
-                + " (type: "
-                + appender.getClass().getName()
-                + ")");
-      }
-
       // Wrap FILE appenders to add TraceRoot JSON format
       org.apache.logging.log4j.core.Appender fileAppender = rootLogger.getAppenders().get("FILE");
       if (fileAppender != null && !(fileAppender instanceof Log4j2FileAppenderWrapper)) {
-        System.out.println("[TraceRoot] Wrapping FILE appender: " + fileAppender.getName());
-        System.out.println(
-            "[TraceRoot] FILE appender layout: " + fileAppender.getLayout().toString());
-
         // Remove the original appender
         rootLogger.removeAppender(fileAppender);
 
@@ -94,7 +79,6 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
         // Add the wrapped appender
         rootLogger.addAppender(wrapper);
-        System.out.println("[TraceRoot] Added wrapped FILE appender");
       }
 
     } catch (Exception e) {
@@ -277,11 +261,6 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   /** Wrapper method to add trace correlation to ThreadContext before logging */
   private void logWithTraceCorrelation(Runnable logAction) {
-    if (config != null && config.isLocalMode()) {
-      // Local mode: just print info and proceed with normal logging
-      System.out.println("[TraceRoot Local] Logging in local mode");
-    }
-
     // Capture stack trace at log creation time
     String originalStackTrace = ThreadContext.get("traceroot.stack_trace");
     try {

@@ -45,6 +45,7 @@ public final class TraceRootConstants {
   public static final String ENV_ENABLE_LOG_CONSOLE_EXPORT = "TRACEROOT_ENABLE_LOG_CONSOLE_EXPORT";
   public static final String ENV_ENABLE_SPAN_CLOUD_EXPORT = "TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT";
   public static final String ENV_ENABLE_LOG_CLOUD_EXPORT = "TRACEROOT_ENABLE_LOG_CLOUD_EXPORT";
+  public static final String ENV_OTLP_ENDPOINT = "TRACEROOT_OTLP_ENDPOINT";
 
   private TraceRootConstants() {
     // Utility class

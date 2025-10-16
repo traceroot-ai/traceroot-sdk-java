@@ -56,19 +56,29 @@ public class StandaloneExample {
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
-            .token(dotenv.get("TRACEROOT_TOKEN", System.getenv("TRACEROOT_TOKEN"))) // Get from .env or environment
+            .token(
+                dotenv.get(
+                    "TRACEROOT_TOKEN",
+                    System.getenv("TRACEROOT_TOKEN"))) // Get from .env or environment
             .environment("development")
             .region("us-west-2")
             .enableSpanConsoleExport(false) // For local development
             .enableLogConsoleExport(true) // For local development
             .enableSpanCloudExport(
-                dotenv.get("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT"))) // Enable for cloud export
+                dotenv.get(
+                    "TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT",
+                    System.getenv("TRACEROOT_ENABLE_SPAN_CLOUD_EXPORT"))) // Enable for cloud export
             .enableLogCloudExport(
-                dotenv.get("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT", System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT"))) // Enable for cloud export
+                dotenv.get(
+                    "TRACEROOT_ENABLE_LOG_CLOUD_EXPORT",
+                    System.getenv("TRACEROOT_ENABLE_LOG_CLOUD_EXPORT"))) // Enable for cloud export
             .localMode(false) // Enable for local development
             .logLevel(LogLevel.INFO)
             .tracerVerbose(true) // Enable verbose logging for debugging
-            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
+            .rootPath(
+                dotenv.get(
+                    "TRACEROOT_ROOT_PATH",
+                    System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
 
     // Initialize SDK (similar to Sentry.init(options))
