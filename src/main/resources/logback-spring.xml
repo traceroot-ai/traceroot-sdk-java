@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- Define the trace correlation converter -->
-    <conversionRule conversionWord="traceId" converterClass="ai.traceroot.sdk.logger.TraceCorrelationConverter" />
+    <conversionRule conversionWord="traceId" converterClass="ai.traceroot.sdk.logger.logback.LogbackTraceCorrelationConverter" />
 
     <!-- Console appender with trace correlation -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -26,12 +26,12 @@
     </appender>
 
     <!-- CloudWatch appender (configured programmatically) -->
-    <appender name="CLOUDWATCH" class="ai.traceroot.sdk.logger.CloudWatchAppender">
+    <appender name="CLOUDWATCH" class="ai.traceroot.sdk.logger.logback.LogbackCloudWatchAppender">
         <!-- This will be configured programmatically when TraceRoot is initialized -->
     </appender>
 
     <!-- Tencent CLS appender (configured programmatically) -->
-    <appender name="TENCENT_CLS" class="ai.traceroot.sdk.logger.TencentCLSAppender">
+    <appender name="TENCENT_CLS" class="ai.traceroot.sdk.logger.logback.LogbackTencentCLSAppender">
         <!-- This will be configured programmatically when TraceRoot is initialized -->
     </appender>
 

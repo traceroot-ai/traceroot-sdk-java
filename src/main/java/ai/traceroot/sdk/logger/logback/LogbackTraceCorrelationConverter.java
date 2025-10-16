@@ -9,7 +9,7 @@ import io.opentelemetry.api.trace.SpanContext;
  * Logback converter for adding trace correlation information to log entries
  *
  * <p>Usage in logback-spring.xml: {@code <conversionRule conversionWord="traceId"
- * converterClass="ai.traceroot.sdk.logger.TraceCorrelationConverter" />} {@code
+ * converterClass="ai.traceroot.sdk.logger.logback.LogbackTraceCorrelationConverter" />} {@code
  * <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%traceId] %logger{36} - %msg%n</pattern>}
  */
 public class LogbackTraceCorrelationConverter extends ClassicConverter {
