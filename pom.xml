@@ -5,7 +5,7 @@
 
     <groupId>ai.traceroot</groupId>
     <artifactId>traceroot-sdk-java</artifactId>
-    <version>0.0.1-alpha.1</version>
+    <version>0.0.1-alpha.2</version>
     <packaging>jar</packaging>
 
     <name>TraceRoot SDK for Java</name>
