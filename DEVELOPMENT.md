@@ -72,3 +72,17 @@ To format the code, in the root directory run:
 curl -L https://github.com/google/google-java-format/releases/download/v1.15.0/google-java-format-1.15.0-all-deps.jar -o google-java-format.jar
 java -jar google-java-format.jar --replace src/**/*.java examples/**/*.java
 ```
+
+## Deploy
+
+
+```bash
+# Clean and build
+mvn clean verify
+
+# Deploy to Maven Central
+mvn deploy -P gpg
+
+# Or use the central-publishing plugin directly
+mvn clean deploy
+```
