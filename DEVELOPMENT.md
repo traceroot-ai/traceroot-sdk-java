@@ -75,7 +75,6 @@ java -jar google-java-format.jar --replace src/**/*.java examples/**/*.java
 
 ## Deploy
 
-
 ```bash
 # Clean and build
 mvn clean verify
