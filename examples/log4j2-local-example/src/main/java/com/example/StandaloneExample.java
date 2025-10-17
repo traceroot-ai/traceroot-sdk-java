@@ -5,6 +5,7 @@ import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
+import io.github.cdimascio.dotenv.Dotenv;
 
 /**
  * Standalone Java example for TraceRoot SDK with local file logging using Log4j2
@@ -19,8 +20,11 @@ public class StandaloneExample {
   private static final TraceRootLogger logger = TraceRootLogger.getLogger(StandaloneExample.class);
 
   public static void main(String[] args) {
+    // Load .env file (optional - falls back to system environment variables)
+    Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+
     // Manual initialization (like Sentry.init())
-    initializeTraceRoot();
+    initializeTraceRoot(dotenv);
 
     try {
       // Execute main application logic
@@ -57,7 +61,7 @@ public class StandaloneExample {
    * Manual TraceRoot initialization with local file logging only - should be called early in
    * application lifecycle Similar to Sentry.init() pattern
    */
-  private static void initializeTraceRoot() {
+  private static void initializeTraceRoot(Dotenv dotenv) {
     // Create configuration for local file logging only (no cloud export)
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
@@ -71,8 +75,8 @@ public class StandaloneExample {
             .enableSpanCloudExport(true) // Enable tracing export to OTLP endpoint
             .enableLogCloudExport(false) // Disable cloud export for logs (local file only)
             .logLevel(LogLevel.TRACE)
-            .otlpEndpoint(System.getenv("TRACEROOT_OTLP_ENDPOINT")) // Get from environment
-            .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
+            .otlpEndpoint(dotenv.get("TRACEROOT_OTLP_ENDPOINT", System.getenv("TRACEROOT_OTLP_ENDPOINT"))) // Get from .env or environment
+            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
 
     // Initialize SDK (similar to Sentry.init(options))
