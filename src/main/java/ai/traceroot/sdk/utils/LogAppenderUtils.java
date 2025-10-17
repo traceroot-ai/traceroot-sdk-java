@@ -365,11 +365,9 @@ public class LogAppenderUtils {
     }
     logData.put("message", message);
 
-    // Timestamp in UTC
+    // Timestamp in ISO 8601 format (UTC)
     java.time.Instant instant = java.time.Instant.ofEpochMilli(event.getTimeStamp());
-    java.time.ZonedDateTime zdt = instant.atZone(java.time.ZoneOffset.UTC);
-    String formattedTimestamp =
-        zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS"));
+    String formattedTimestamp = instant.toString();
     logData.put("timestamp", formattedTimestamp);
 
     return logData;

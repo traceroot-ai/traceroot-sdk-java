@@ -48,12 +48,9 @@ public class Log4j2JsonConsoleAppender extends AbstractAppender {
   @Override
   public void append(LogEvent event) {
     try {
-      // For console, use standard log4j2 formatting with UTC timestamps
-      // Format: timestamp [thread] LEVEL logger - message
-      String timestamp =
-          Instant.ofEpochMilli(event.getTimeMillis())
-              .atZone(java.time.ZoneOffset.UTC)
-              .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+      // Format console output with ISO 8601 timestamp (UTC)
+      // Example: 2025-10-16T23:23:41.917Z [thread] LEVEL logger - message
+      String timestamp = Instant.ofEpochMilli(event.getTimeMillis()).toString();
 
       StringBuilder formattedMessage = new StringBuilder();
       formattedMessage.append(

@@ -6,8 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -136,9 +135,9 @@ public class LogbackJsonFileAppender extends RollingFileAppender<ILoggingEvent> 
       logData.put("github_commit_hash", "main");
     }
 
-    // Timestamp in the same format as the example: 2025-10-15 04:31:25,010
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
-    String timestamp = sdf.format(new Date(event.getTimeStamp()));
+    // Timestamp in ISO 8601 format (UTC)
+    Instant instant = Instant.ofEpochMilli(event.getTimeStamp());
+    String timestamp = instant.toString();
     logData.put("timestamp", timestamp);
 
     return logData;
