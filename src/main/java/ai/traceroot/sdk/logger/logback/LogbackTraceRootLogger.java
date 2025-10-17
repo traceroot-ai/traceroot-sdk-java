@@ -24,11 +24,13 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
       new ConcurrentHashMap<>();
 
   private final Logger logger;
-  private TraceRootConfigImpl config;
 
-  private LogbackTraceRootLogger(Logger logger, TraceRootConfigImpl config) {
+  // Static config holder - all loggers share this config
+  private static TraceRootConfigImpl globalConfig;
+
+  private LogbackTraceRootLogger(Logger logger) {
     this.logger = logger;
-    this.config = config;
+    // Config is stored globally, not per-instance
   }
 
   /** Get a TraceRoot logger for the specified class */
@@ -42,17 +44,13 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
         name,
         loggerName -> {
           Logger slf4jLogger = (Logger) LoggerFactory.getLogger(loggerName);
-
-          // Try to get config from logger context
-          LoggerContext context = slf4jLogger.getLoggerContext();
-          TraceRootConfigImpl config = (TraceRootConfigImpl) context.getObject("traceRootConfig");
-
-          return new LogbackTraceRootLogger(slf4jLogger, config);
+          return new LogbackTraceRootLogger(slf4jLogger);
         });
   }
 
   /** Initialize TraceRoot logging with configuration */
   public static void initialize(TraceRootConfigImpl config) {
+    globalConfig = config;
     LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
     context.putObject("traceRootConfig", config);
 
@@ -135,16 +133,6 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
     } catch (Exception e) {
       System.err.println("[TraceRoot] Failed to wrap file appenders: " + e.getMessage());
       e.printStackTrace();
-    }
-
-    // Update all existing logger instances with the new config
-    updateAllLoggerConfigs(config);
-  }
-
-  /** Update all existing LogbackTraceRootLogger instances with the new config */
-  private static void updateAllLoggerConfigs(TraceRootConfigImpl config) {
-    for (LogbackTraceRootLogger logger : loggerInstances.values()) {
-      logger.config = config;
     }
   }
 
@@ -320,7 +308,7 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
 
   /** Add log event to current span (simplified - local mode not implemented) */
   public void addSpanEventDirectly(String eventName, Map<String, String> attributes) {
-    if (config != null && config.isLocalMode()) {
+    if (globalConfig != null && globalConfig.isLocalMode()) {
       // Local mode: just log the event
       logger.debug("[TraceRoot Local] Span event: {} with attributes: {}", eventName, attributes);
     }
@@ -329,7 +317,7 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
 
   /** Wrapper method to add trace correlation to MDC before logging */
   private void logWithTraceCorrelation(Runnable logAction) {
-    if (config != null && config.isLocalMode()) {
+    if (globalConfig != null && globalConfig.isLocalMode()) {
       // Local mode: just print info and proceed with normal logging
       System.out.println("[TraceRoot Local] Logging in local mode");
     }
@@ -364,10 +352,10 @@ public class LogbackTraceRootLogger implements TraceRootLoggerInterface {
         String filePath = LogAppenderUtils.getFilePath(caller);
 
         // Apply root path transformation if configured
-        if (config != null
-            && config.getRootPath() != null
-            && filePath.startsWith(config.getRootPath())) {
-          filePath = filePath.substring(config.getRootPath().length());
+        if (globalConfig != null
+            && globalConfig.getRootPath() != null
+            && filePath.startsWith(globalConfig.getRootPath())) {
+          filePath = filePath.substring(globalConfig.getRootPath().length());
           if (filePath.startsWith("/")) {
             filePath = filePath.substring(1);
           }

@@ -20,14 +20,13 @@ import org.apache.logging.log4j.core.config.Configurator;
 public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   private final Logger logger;
-  private TraceRootConfigImpl config;
 
-  // Static config holder
+  // Static config holder - all loggers share this config
   private static TraceRootConfigImpl globalConfig;
 
   private Log4j2TraceRootLogger(Logger logger, TraceRootConfigImpl config) {
     this.logger = logger;
-    this.config = config;
+    // Config is stored globally, not per-instance
   }
 
   /** Get a TraceRoot logger for the specified class */
@@ -38,7 +37,7 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
   /** Get a TraceRoot logger for the specified name */
   public static Log4j2TraceRootLogger getLogger(String name) {
     Logger log4j2Logger = LogManager.getLogger(name);
-    return new Log4j2TraceRootLogger(log4j2Logger, globalConfig);
+    return new Log4j2TraceRootLogger(log4j2Logger, null);
   }
 
   /** Initialize TraceRoot logging with configuration */
@@ -274,10 +273,10 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
         String filePath = LogAppenderUtils.getFilePath(caller);
 
         // Apply root path transformation if configured
-        if (config != null
-            && config.getRootPath() != null
-            && filePath.startsWith(config.getRootPath())) {
-          filePath = filePath.substring(config.getRootPath().length());
+        if (globalConfig != null
+            && globalConfig.getRootPath() != null
+            && filePath.startsWith(globalConfig.getRootPath())) {
+          filePath = filePath.substring(globalConfig.getRootPath().length());
           if (filePath.startsWith("/")) {
             filePath = filePath.substring(1);
           }
