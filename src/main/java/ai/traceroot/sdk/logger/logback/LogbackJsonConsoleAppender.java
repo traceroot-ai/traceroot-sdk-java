@@ -38,12 +38,9 @@ public class LogbackJsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
   @Override
   protected void append(ILoggingEvent event) {
     try {
-      // For console, use standard logback formatting with UTC timestamps
-      // Format: timestamp [thread] LEVEL logger - message
-      String timestamp =
-          java.time.Instant.ofEpochMilli(event.getTimeStamp())
-              .atZone(java.time.ZoneOffset.UTC)
-              .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+      // Format console output with ISO 8601 timestamp (UTC)
+      // Example: 2025-10-16T23:23:41.917Z [thread] LEVEL logger - message
+      String timestamp = java.time.Instant.ofEpochMilli(event.getTimeStamp()).toString();
 
       StringBuilder formattedMessage = new StringBuilder();
       formattedMessage.append(
@@ -151,7 +148,7 @@ public class LogbackJsonConsoleAppender extends ConsoleAppender<ILoggingEvent> {
     // Message
     logData.put("message", event.getFormattedMessage());
 
-    // Timestamp in ISO format
+    // Timestamp in ISO 8601 format (UTC)
     Instant instant = Instant.ofEpochMilli(event.getTimeStamp());
     String timestamp = instant.toString();
     logData.put("timestamp", timestamp);

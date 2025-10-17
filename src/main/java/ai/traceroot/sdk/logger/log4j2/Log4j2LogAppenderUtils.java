@@ -83,7 +83,7 @@ public class Log4j2LogAppenderUtils {
     }
     logData.put("message", message);
 
-    // Timestamp in ISO format
+    // Timestamp in ISO 8601 format (UTC)
     Instant instant = Instant.ofEpochMilli(event.getTimeMillis());
     String timestamp = instant.toString();
     logData.put("timestamp", timestamp);
