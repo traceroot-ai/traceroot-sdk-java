@@ -96,3 +96,76 @@ curl http://localhost:16686/api/services
 ```
 
 **Expected output:** `{"data":null}` or `{"data":[]}` (empty because no traces have been sent yet)
+
+## Setting Up Tencent CLS LogListener
+
+This section guides you through setting up Tencent CLS LogListener agent to automatically collect local log files and send them to CLS (Cloud Log Service).
+
+### Step 1: Install LogListener Agent
+
+SSH into your Tencent CVM and install the LogListener agent:
+
+```bash
+# Download LogListener installer
+cd /tmp
+wget http://mirrors.tencent.com/install/cls/loglistener-linux-x64.tar.gz
+
+# Extract to /usr/local
+sudo tar -zxvf loglistener-linux-x64.tar.gz -C /usr/local/
+
+# Navigate to tools directory
+cd /usr/local/loglistener/tools
+
+# Install the agent
+sudo ./loglistener.sh install
+```
+
+### Step 2: Initialize LogListener with Your Credentials
+
+Initialize the agent with your Tencent Cloud credentials:
+
+```bash
+# Initialize with your credentials
+sudo ./loglistener.sh init \
+  --secretid YOUR_SECRET_ID \
+  --secretkey YOUR_SECRET_KEY \
+  --region YOUR_LOCATION \
+  --network internet
+```
+
+### Step 3: Start LogListener Service
+
+Start and verify the LogListener daemon:
+
+```bash
+# Start the service
+sudo systemctl start loglistenerd
+
+# Check service status
+sudo systemctl status loglistenerd
+
+# Enable on boot (optional)
+sudo systemctl enable loglistenerd
+```
+
+### Step 4: Configure Collection in CLS Console
+
+Configure the log collection in Tencent CLS Console:
+
+1. **Navigate to CLS Console** → Select your **Log Topic** → **Collection Configuration**
+
+2. **Create Machine Group**:
+   - Go to **Machine Group** section
+   - Click **Create Machine Group**
+   - Add your CVM's **private IP address**
+   - Save the machine group
+
+3. **Create Collection Configuration**:
+   - Click **Create Collection Config**
+   - **Collection Path**: 
+     ```
+     /path/to/traceroot-sdk-java/examples/log4j2-local-example/logs/traceroot-sdk.log
+     ```
+   - **Key-Value Extraction Mode**: Select `JSON`
+   - **Associate Machine Group**: Select the machine group you created
+   - Click **Save**
