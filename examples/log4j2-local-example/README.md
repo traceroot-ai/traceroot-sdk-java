@@ -154,15 +154,17 @@ Configure the log collection in Tencent CLS Console:
 
 1. **Navigate to CLS Console** → Select your **Log Topic** → **Collection Configuration**
 
-2. **Create Machine Group**:
+1. **Create Machine Group**:
+
    - Go to **Machine Group** section
    - Click **Create Machine Group**
    - Add your CVM's **private IP address**
    - Save the machine group
 
-3. **Create Collection Configuration**:
+1. **Create Collection Configuration**:
+
    - Click **Create Collection Config**
-   - **Collection Path**: 
+   - **Collection Path**:
      ```
      /path/to/traceroot-sdk-java/examples/log4j2-local-example/logs/traceroot-sdk.log
      ```
