@@ -365,6 +365,9 @@ public class TraceRootTracer {
       }
     }
 
+    // Add cleanup processor to prevent memory leaks in SpanLogCounter
+    tracerProviderBuilder.addSpanProcessor(new SpanLogCounterCleanupProcessor());
+
     // Build tracer provider
     tracerProvider = tracerProviderBuilder.build();
 

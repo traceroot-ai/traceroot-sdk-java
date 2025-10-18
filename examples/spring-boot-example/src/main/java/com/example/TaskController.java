@@ -127,6 +127,7 @@ public class TaskController {
   // Minimal error handling
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(TaskNotFound.class)
+  @Trace(spanName = "handle-task-not-found")
   public String notFound(TaskNotFound ex) {
     logger.error("Task not found error: {}", ex.getMessage());
     return ex.getMessage();

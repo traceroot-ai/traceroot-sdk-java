@@ -75,8 +75,14 @@ public class StandaloneExample {
             .enableSpanCloudExport(true) // Enable tracing export to OTLP endpoint
             .enableLogCloudExport(false) // Disable cloud export for logs (local file only)
             .logLevel(LogLevel.TRACE)
-            .otlpEndpoint(dotenv.get("TRACEROOT_OTLP_ENDPOINT", System.getenv("TRACEROOT_OTLP_ENDPOINT"))) // Get from .env or environment
-            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
+            .otlpEndpoint(
+                dotenv.get(
+                    "TRACEROOT_OTLP_ENDPOINT",
+                    System.getenv("TRACEROOT_OTLP_ENDPOINT"))) // Get from .env or environment
+            .rootPath(
+                dotenv.get(
+                    "TRACEROOT_ROOT_PATH",
+                    System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
 
     // Initialize SDK (similar to Sentry.init(options))

@@ -4,6 +4,7 @@ import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.logger.TraceRootLoggerInterface;
 import ai.traceroot.sdk.types.LogLevel;
 import ai.traceroot.sdk.utils.LogAppenderUtils;
+import ai.traceroot.sdk.utils.SpanLogCounter;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -152,76 +153,91 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
 
   @Override
   public void trace(String message) {
+    SpanLogCounter.incrementTraceLogCount();
     logWithTraceCorrelation(() -> logger.trace(message));
   }
 
   @Override
   public void trace(String format, Object... args) {
+    SpanLogCounter.incrementTraceLogCount();
     logWithTraceCorrelation(() -> logger.trace(format, args));
   }
 
   @Override
   public void trace(String message, Throwable throwable) {
+    SpanLogCounter.incrementTraceLogCount();
     logWithTraceCorrelation(() -> logger.trace(message, throwable));
   }
 
   @Override
   public void debug(String message) {
+    SpanLogCounter.incrementDebugLogCount();
     logWithTraceCorrelation(() -> logger.debug(message));
   }
 
   @Override
   public void debug(String format, Object... args) {
+    SpanLogCounter.incrementDebugLogCount();
     logWithTraceCorrelation(() -> logger.debug(format, args));
   }
 
   @Override
   public void debug(String message, Throwable throwable) {
+    SpanLogCounter.incrementDebugLogCount();
     logWithTraceCorrelation(() -> logger.debug(message, throwable));
   }
 
   @Override
   public void info(String message) {
+    SpanLogCounter.incrementInfoLogCount();
     logWithTraceCorrelation(() -> logger.info(message));
   }
 
   @Override
   public void info(String format, Object... args) {
+    SpanLogCounter.incrementInfoLogCount();
     logWithTraceCorrelation(() -> logger.info(format, args));
   }
 
   @Override
   public void info(String message, Throwable throwable) {
+    SpanLogCounter.incrementInfoLogCount();
     logWithTraceCorrelation(() -> logger.info(message, throwable));
   }
 
   @Override
   public void warn(String message) {
+    SpanLogCounter.incrementWarnLogCount();
     logWithTraceCorrelation(() -> logger.warn(message));
   }
 
   @Override
   public void warn(String format, Object... args) {
+    SpanLogCounter.incrementWarnLogCount();
     logWithTraceCorrelation(() -> logger.warn(format, args));
   }
 
   @Override
   public void warn(String message, Throwable throwable) {
+    SpanLogCounter.incrementWarnLogCount();
     logWithTraceCorrelation(() -> logger.warn(message, throwable));
   }
 
   @Override
   public void error(String message) {
+    SpanLogCounter.incrementErrorLogCount();
     logWithTraceCorrelation(() -> logger.error(message));
   }
 
   @Override
   public void error(String format, Object... args) {
+    SpanLogCounter.incrementErrorLogCount();
     logWithTraceCorrelation(() -> logger.error(format, args));
   }
 
   @Override
   public void error(String message, Throwable throwable) {
+    SpanLogCounter.incrementErrorLogCount();
     logWithTraceCorrelation(() -> logger.error(message, throwable));
   }
 

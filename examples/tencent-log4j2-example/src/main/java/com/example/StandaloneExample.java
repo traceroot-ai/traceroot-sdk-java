@@ -71,18 +71,26 @@ public class StandaloneExample {
             .enableSpanCloudExport(true) // Enable for cloud export
             .enableLogCloudExport(true) // Enable for Tencent CLS export
             .logLevel(LogLevel.TRACE)
-            .rootPath(dotenv.get("TRACEROOT_ROOT_PATH", System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
+            .rootPath(
+                dotenv.get(
+                    "TRACEROOT_ROOT_PATH",
+                    System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
 
     // Configure Tencent Cloud credentials (required for Tencent provider)
     TencentCredentials tencentCredentials = new TencentCredentials();
     tencentCredentials.setSecretId(
-        dotenv.get("TENCENT_SECRET_ID", System.getenv("TENCENT_SECRET_ID"))); // Get from .env or environment
+        dotenv.get(
+            "TENCENT_SECRET_ID",
+            System.getenv("TENCENT_SECRET_ID"))); // Get from .env or environment
     tencentCredentials.setSecretKey(
-        dotenv.get("TENCENT_SECRET_KEY", System.getenv("TENCENT_SECRET_KEY"))); // Get from .env or environment
+        dotenv.get(
+            "TENCENT_SECRET_KEY",
+            System.getenv("TENCENT_SECRET_KEY"))); // Get from .env or environment
     tencentCredentials.setRegion("ap-hongkong"); // Optional: defaults to ap-hongkong
     tencentCredentials.setLogset(
-        dotenv.get("TENCENT_LOGSET", System.getenv("TENCENT_LOGSET"))); // Get from .env or environment
+        dotenv.get(
+            "TENCENT_LOGSET", System.getenv("TENCENT_LOGSET"))); // Get from .env or environment
     tencentCredentials.setTraceToken(
         dotenv.get("TRACE_TOKEN", System.getenv("TRACE_TOKEN"))); // Get from .env or environment
 
