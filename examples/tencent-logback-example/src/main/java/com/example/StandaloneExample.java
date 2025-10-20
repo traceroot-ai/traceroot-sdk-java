@@ -76,11 +76,13 @@ public class StandaloneExample {
         System.getenv("TENCENT_SECRET_ID")); // Required: Get from environment
     tencentCredentials.setSecretKey(
         System.getenv("TENCENT_SECRET_KEY")); // Required: Get from environment
-    tencentCredentials.setRegion("ap-hongkong"); // Optional: defaults to ap-hongkong
+    tencentCredentials.setRegion("na-siliconvalley"); // Optional: defaults to ap-hongkong
     tencentCredentials.setLogset(
         System.getenv("TENCENT_LOGSET")); // Optional: CLS logset name (like AWS log group)
     tencentCredentials.setTraceToken(
         System.getenv("TRACE_TOKEN")); // Required: Tencent APM trace token for authentication
+    tencentCredentials.setOtlpEndpoint(
+        System.getenv("TENCENT_APM_ENDPOINT")); // Optional: Custom APM endpoint (overrides default pattern)
 
     // Set credentials on config
     config.setTencentCredentials(tencentCredentials);
