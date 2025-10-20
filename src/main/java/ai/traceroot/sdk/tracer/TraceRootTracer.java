@@ -288,21 +288,31 @@ public class TraceRootTracer {
   private void prepareTencentConfig() {
     // For Tencent, we use the configured credentials and construct the OTLP endpoint
     if (config.getTencentCredentials() != null) {
-      String region = config.getTencentCredentials().getRegion();
-      if (region == null) {
-        region = TraceRootConstants.TENCENT_DEFAULT_REGION; // Default region
+      String tencentOtlpEndpoint = config.getTencentCredentials().getOtlpEndpoint();
+
+      // Only construct endpoint from pattern if not already specified
+      if (tencentOtlpEndpoint == null || tencentOtlpEndpoint.isEmpty()) {
+        String region = config.getTencentCredentials().getRegion();
+        if (region == null) {
+          region = TraceRootConstants.TENCENT_DEFAULT_REGION; // Default region
+        }
+
+        // Construct the endpoint based on the region
+        tencentOtlpEndpoint =
+            String.format(TraceRootConstants.TENCENT_APM_ENDPOINT_PATTERN, region);
+
+        config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
+
+        if (config.isTracerVerbose()) {
+          logger.debug("[TraceRoot] Tencent Cloud APM endpoint auto-configured: {}", tencentOtlpEndpoint);
+        }
+      } else {
+        if (config.isTracerVerbose()) {
+          logger.debug("[TraceRoot] Using user-specified Tencent Cloud APM endpoint: {}", tencentOtlpEndpoint);
+        }
       }
 
-      // Construct the endpoint based on the region
-      String tencentOtlpEndpoint =
-          String.format(TraceRootConstants.TENCENT_APM_ENDPOINT_PATTERN, region);
-
-      config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
       config.setOtlpEndpoint(tencentOtlpEndpoint);
-
-      if (config.isTracerVerbose()) {
-        logger.debug("[TraceRoot] Tencent Cloud APM endpoint configured: {}", tencentOtlpEndpoint);
-      }
     } else {
       logger.error("[TraceRoot] Tencent provider selected but no Tencent credentials configured");
     }
