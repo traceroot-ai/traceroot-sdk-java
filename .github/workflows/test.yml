@@ -57,6 +57,8 @@ jobs:
           echo "Build verification completed"
 
       - name: Test Log4j2 Local Example
+        env:
+          TRACEROOT_OTLP_ENDPOINT: http://127.0.0.1:4318/v1/traces
         run: |
           cd examples/log4j2-local-example
           echo "Running Log4j2 local example..."
@@ -106,6 +108,8 @@ jobs:
           echo "✓ Log4j2 local example validation passed"
 
       - name: Test Log4j2 Custom Format Example
+        env:
+          TRACEROOT_OTLP_ENDPOINT: http://127.0.0.1:4318/v1/traces
         run: |
           cd examples/log4j2-custom-format-example
           echo "Running Log4j2 custom format example..."
