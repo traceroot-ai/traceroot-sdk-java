@@ -11,8 +11,10 @@ import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.appender.OutputStreamManager;
 import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.message.SimpleMessage;
 
 /** Wrapper appender that intercepts file appenders and reformats output to TraceRoot JSON format */
@@ -20,39 +22,64 @@ public class Log4j2FileAppenderWrapper extends AbstractAppender {
 
   private TraceRootConfigImpl config;
   private Appender delegate;
+  private String userPattern;
+  private OutputStreamManager outputStreamManager;
 
   protected Log4j2FileAppenderWrapper(
       String name, Filter filter, Layout<?> layout, Appender delegate) {
     super(name, filter, layout, true, Property.EMPTY_ARRAY);
     this.delegate = delegate;
+
+    // Extract user's pattern if available
+    if (layout instanceof PatternLayout) {
+      this.userPattern = ((PatternLayout) layout).getConversionPattern();
+    }
+
+    // Get the output stream manager from the delegate using reflection
+    // so we can write directly to the file
+    try {
+      if (delegate instanceof org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender) {
+        java.lang.reflect.Field managerField =
+            org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.class
+                .getDeclaredField("manager");
+        managerField.setAccessible(true);
+        this.outputStreamManager = (OutputStreamManager) managerField.get(delegate);
+      }
+    } catch (Exception e) {
+      error("Failed to get OutputStreamManager: " + e.getMessage(), e);
+    }
   }
 
   public static Log4j2FileAppenderWrapper wrap(Appender delegate) {
-    return new Log4j2FileAppenderWrapper(delegate.getName(), null, null, delegate);
+    return new Log4j2FileAppenderWrapper(delegate.getName(), null, delegate.getLayout(), delegate);
   }
 
   @Override
   public void append(LogEvent event) {
     try {
-      // Create a custom logging event with our TraceRoot JSON format
+      // Create TraceRoot JSON format with merged user fields
       String formattedMessage = formatAsTraceRootJson(event);
 
-      // Create a minimal log event with ONLY the formatted JSON message
-      // Use a blank logger name to avoid prefix formatting
-      LogEvent wrappedEvent =
-          Log4jLogEvent.newBuilder()
-              .setLoggerName("")
-              .setLoggerFqcn("")
-              .setLevel(org.apache.logging.log4j.Level.OFF) // Use OFF to avoid level formatting
-              .setMessage(new SimpleMessage(formattedMessage))
-              .setThreadName("")
-              .setTimeMillis(event.getTimeMillis())
-              .setThrown(null)
-              .setContextStack(event.getContextStack())
-              .build();
-
-      // Pass to the delegate appender
-      delegate.append(wrappedEvent);
+      // Write directly to the output stream, bypassing the delegate's layout
+      if (outputStreamManager != null) {
+        byte[] bytes = (formattedMessage + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        outputStreamManager.writeBytes(bytes, 0, bytes.length);
+        outputStreamManager.flush();
+      } else {
+        // Fallback: use the delegate appender
+        LogEvent wrappedEvent =
+            Log4jLogEvent.newBuilder()
+                .setLoggerName("")
+                .setLoggerFqcn("")
+                .setLevel(org.apache.logging.log4j.Level.INFO)
+                .setMessage(new SimpleMessage(formattedMessage))
+                .setThreadName("")
+                .setTimeMillis(event.getTimeMillis())
+                .setThrown(null)
+                .setContextStack(event.getContextStack())
+                .build();
+        delegate.append(wrappedEvent);
+      }
     } catch (Exception e) {
       error("Failed to wrap log event: " + e.getMessage(), e);
       // Fallback to delegate
@@ -62,6 +89,17 @@ public class Log4j2FileAppenderWrapper extends AbstractAppender {
 
   private String formatAsTraceRootJson(LogEvent event) {
     Map<String, Object> logData = createLogData(event);
+
+    // Merge with user's custom fields if pattern is available
+    if (userPattern != null && !userPattern.isEmpty()) {
+      Map<String, Object> userFields = parseUserPattern(event, userPattern);
+      // Add only non-conflicting user fields at the end
+      for (Map.Entry<String, Object> entry : userFields.entrySet()) {
+        if (!logData.containsKey(entry.getKey())) {
+          logData.put(entry.getKey(), entry.getValue());
+        }
+      }
+    }
 
     // Format as JSON for structured logging (parseable by log agents)
     StringBuilder json = new StringBuilder();
@@ -88,6 +126,59 @@ public class Log4j2FileAppenderWrapper extends AbstractAppender {
     json.append("}");
 
     return json.toString();
+  }
+
+  /**
+   * Parse user's pattern and extract custom fields
+   *
+   * @param event Log event
+   * @param pattern User's pattern string
+   * @return Map of user-defined fields
+   */
+  private Map<String, Object> parseUserPattern(LogEvent event, String pattern) {
+    Map<String, Object> userFields = new LinkedHashMap<>();
+
+    // Parse common patterns from user's format
+    if (pattern.contains("%d{") || pattern.contains("dateTime")) {
+      Instant instant = Instant.ofEpochMilli(event.getTimeMillis());
+      userFields.put("dateTime", instant.toString());
+    }
+
+    if (pattern.contains("%thread") || pattern.contains("thread")) {
+      userFields.put("thread", event.getThreadName());
+    }
+
+    if (pattern.contains("%logger") || pattern.contains("class")) {
+      userFields.put("class", event.getLoggerName());
+    }
+
+    if (pattern.contains("%method") || pattern.contains("method")) {
+      StackTraceElement source = event.getSource();
+      if (source != null) {
+        userFields.put("method", source.getMethodName());
+      } else {
+        userFields.put("method", "unknown");
+      }
+    }
+
+    if (pattern.contains("instanceIp") || pattern.contains("INSTANCE_IP")) {
+      String instanceIp = event.getContextData().getValue("INSTANCE_IP");
+      if (instanceIp != null) {
+        userFields.put("instanceIp", instanceIp);
+      }
+    }
+
+    if (pattern.contains("requestIp") || pattern.contains("trace-ip")) {
+      String requestIp = event.getContextData().getValue("trace-ip");
+      if (requestIp != null) {
+        userFields.put("requestIp", requestIp);
+      }
+    }
+
+    // Note: We intentionally skip conflicting fields like "level", "message"
+    // because TraceRoot values should take precedence
+
+    return userFields;
   }
 
   private Map<String, Object> createLogData(LogEvent event) {

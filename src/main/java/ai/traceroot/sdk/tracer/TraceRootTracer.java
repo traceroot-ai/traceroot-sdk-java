@@ -304,11 +304,14 @@ public class TraceRootTracer {
         config.getTencentCredentials().setOtlpEndpoint(tencentOtlpEndpoint);
 
         if (config.isTracerVerbose()) {
-          logger.debug("[TraceRoot] Tencent Cloud APM endpoint auto-configured: {}", tencentOtlpEndpoint);
+          logger.debug(
+              "[TraceRoot] Tencent Cloud APM endpoint auto-configured: {}", tencentOtlpEndpoint);
         }
       } else {
         if (config.isTracerVerbose()) {
-          logger.debug("[TraceRoot] Using user-specified Tencent Cloud APM endpoint: {}", tencentOtlpEndpoint);
+          logger.debug(
+              "[TraceRoot] Using user-specified Tencent Cloud APM endpoint: {}",
+              tencentOtlpEndpoint);
         }
       }
 

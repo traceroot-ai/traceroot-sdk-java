@@ -5,25 +5,26 @@ import ai.traceroot.sdk.config.TraceRootConfigImpl;
 import ai.traceroot.sdk.logger.TraceRootLogger;
 import ai.traceroot.sdk.tracer.annotations.Trace;
 import ai.traceroot.sdk.types.LogLevel;
-import ai.traceroot.sdk.types.Provider;
-import ai.traceroot.sdk.types.TencentCredentials;
+import io.github.cdimascio.dotenv.Dotenv;
 
 /**
- * Standalone Java example for TraceRoot SDK with Tencent Cloud CLS using Logback
+ * Standalone Java example for TraceRoot SDK with local file logging using Log4j2
  *
- * <p>This example shows how to manually initialize TraceRoot SDK with Tencent Cloud provider for
- * logging to Tencent Cloud CLS (Cloud Log Service) using Logback as the logging backend, similar to
- * how Sentry is initialized in Java applications.
+ * <p>This example shows how to use TraceRoot SDK with local file logging only (no cloud export).
+ * Logs are written to local files using Log4j2 as the logging backend.
  *
- * <p>Note: TraceRootLogger will automatically detect and use Logback if it's on the classpath.
+ * <p>Note: TraceRootLogger will automatically detect and use Log4j2 if it's on the classpath.
  */
 public class StandaloneExample {
 
   private static final TraceRootLogger logger = TraceRootLogger.getLogger(StandaloneExample.class);
 
   public static void main(String[] args) {
+    // Load .env file (optional - falls back to system environment variables)
+    Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+
     // Manual initialization (like Sentry.init())
-    initializeTraceRoot();
+    initializeTraceRoot(dotenv);
 
     try {
       // Execute main application logic
@@ -32,6 +33,14 @@ public class StandaloneExample {
       // Cleanup before application exit
       shutdown();
     }
+  }
+
+  /** Cleanup - should be called before application shutdown */
+  private static void shutdown() {
+    // Force flush any pending spans/logs
+    TraceRootSDK.forceFlush();
+    // Shutdown SDK
+    TraceRootSDK.shutdown();
   }
 
   /** Main application logic with automatic tracing and logging */
@@ -49,44 +58,32 @@ public class StandaloneExample {
   }
 
   /**
-   * Manual TraceRoot initialization with Tencent Cloud CLS - should be called early in application
-   * lifecycle Similar to Sentry.init() pattern
+   * Manual TraceRoot initialization with local file logging only - should be called early in
+   * application lifecycle Similar to Sentry.init() pattern
    */
-  private static void initializeTraceRoot() {
-    // Create configuration for Tencent Cloud provider
+  private static void initializeTraceRoot(Dotenv dotenv) {
+    // Create configuration for local file logging only (no cloud export)
     TraceRootConfigImpl config =
         TraceRootConfigImpl.builderWithEnvDefaults()
-            .serviceName("tencent-logback-app")
+            .serviceName("log4j2-local-app")
             .githubOwner("traceroot-ai")
             .githubRepoName("traceroot-sdk-java")
             .githubCommitHash("main")
             .environment("development")
-            .provider(Provider.TENCENT) // Use Tencent Cloud provider
-            .enableSpanConsoleExport(false) // For local development
-            .enableLogConsoleExport(true) // For local development
-            .enableSpanCloudExport(true) // Enable for cloud export
-            .enableLogCloudExport(true) // Enable for Tencent CLS export
+            .enableSpanConsoleExport(false) // Disable console export for spans
+            .enableLogConsoleExport(true) // Enable console logging
+            .enableSpanCloudExport(true) // Enable tracing export to OTLP endpoint
+            .enableLogCloudExport(false) // Disable cloud export for logs (local file only)
             .logLevel(LogLevel.TRACE)
-            .rootPath(System.getenv("TRACEROOT_ROOT_PATH")) // Get from environment
+            .otlpEndpoint(
+                dotenv.get(
+                    "TRACEROOT_OTLP_ENDPOINT",
+                    System.getenv("TRACEROOT_OTLP_ENDPOINT"))) // Get from .env or environment
+            .rootPath(
+                dotenv.get(
+                    "TRACEROOT_ROOT_PATH",
+                    System.getenv("TRACEROOT_ROOT_PATH"))) // Get from .env or environment
             .build();
-
-    // Configure Tencent Cloud credentials (required for Tencent provider)
-    TencentCredentials tencentCredentials = new TencentCredentials();
-    tencentCredentials.setSecretId(
-        System.getenv("TENCENT_SECRET_ID")); // Required: Get from environment
-    tencentCredentials.setSecretKey(
-        System.getenv("TENCENT_SECRET_KEY")); // Required: Get from environment
-    tencentCredentials.setRegion("na-siliconvalley"); // Optional: defaults to ap-hongkong
-    tencentCredentials.setLogset(
-        System.getenv("TENCENT_LOGSET")); // Optional: CLS logset name (like AWS log group)
-    tencentCredentials.setTraceToken(
-        System.getenv("TRACE_TOKEN")); // Required: Tencent APM trace token for authentication
-    tencentCredentials.setOtlpEndpoint(
-        System.getenv(
-            "TENCENT_APM_ENDPOINT")); // Optional: Custom APM endpoint (overrides default pattern)
-
-    // Set credentials on config
-    config.setTencentCredentials(tencentCredentials);
 
     // Initialize SDK (similar to Sentry.init(options))
     TraceRootSDK.initialize(config);
@@ -133,13 +130,5 @@ public class StandaloneExample {
     long duration = 150;
     logger.info(
         "User {} performed action {} on resource {} in {}ms", userId, action, resource, duration);
-  }
-
-  /** Cleanup - should be called before application shutdown Similar to Sentry shutdown pattern */
-  private static void shutdown() {
-    // Force flush any pending spans/logs
-    TraceRootSDK.forceFlush();
-    // Shutdown SDK
-    TraceRootSDK.shutdown();
   }
 }

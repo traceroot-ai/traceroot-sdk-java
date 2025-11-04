@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="INSTANCE_IP">192.168.1.100</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- File Appender with Custom JSON Pattern -->
+        <!-- This pattern will be merged with TraceRoot required fields -->
+        <!-- User's custom fields: dateTime, thread, class, method, instanceIp, requestIp -->
+        <!-- Conflicting fields (level, message) will use TraceRoot values -->
+        <RollingFile name="FILE" fileName="logs/traceroot-sdk.log"
+                     filePattern="logs/traceroot-sdk.%d{yyyy-MM-dd}.%i.log">
+            <!-- Custom pattern with user-defined fields -->
+            <PatternLayout pattern='{"dateTime":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%-5level","thread":"%thread","instanceIp":"${INSTANCE_IP}","traceId":"%X{trace-id}","requestIp":"%X{trace-ip}","class":"%logger{0}","method":"%method","message":%jm}%n'/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30">
+                <Delete basePath="logs" maxDepth="1">
+                    <IfFileName glob="traceroot-sdk.*.log"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Root logger configuration -->
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Root>
+
+        <!-- TraceRoot SDK specific logger -->
+        <Logger name="ai.traceroot.sdk" level="WARN" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <!-- Reduce noise in logs -->
+        <Logger name="io.opentelemetry" level="WARN"/>
+        <Logger name="org.apache.hc" level="WARN"/>
+    </Loggers>
+</Configuration>
