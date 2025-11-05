@@ -24,7 +24,7 @@
         <dependency>
             <groupId>ai.traceroot</groupId>
             <artifactId>traceroot-sdk-java</artifactId>
-            <version>0.0.1-alpha.4</version>
+            <version>0.0.1-alpha.5</version>
         </dependency>
 
         <!-- Logback (explicitly included since it's optional in the SDK) -->
