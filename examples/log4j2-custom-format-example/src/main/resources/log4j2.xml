@@ -1,47 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="DEBUG" monitorInterval="30">
     <Properties>
-        <Property name="INSTANCE_IP">192.168.1.100</Property>
+        <Property name="APP_NAME" value="${spring:spring.application.name:-log4j2-custom-format-example}"/>
+        <Property name="VER" value="${spring:spring.application.version:-1.0.0}"/>
+        <Property name="INSTANCE_IP" value="${sys:instanceIp:-192.168.1.100}"/>
+        <Property name="LOG_HOME">${sys:log.dir:-logs}</Property>
+        <Property name="LOG_NAME">${APP_NAME}</Property>
+        <Property name="FILE_NAME">${LOG_HOME}/${APP_NAME}.log</Property>
+        <Property name="CONSOLE_PATTERN_FORMAT"
+                  value='{"%d{yyyy-MM-dd HH:mm:ss.SSS}","%highlight{%-5level}","%thread","${INSTANCE_IP}","%highlight{%X{trace-id}}","%X{trace-ip}","%highlight{%logger{0}}","%highlight{%method}",%jm}%n'/>
+        <Property name="JSON_PATTERN_FORMAT"
+                  value='{"dateTime":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%-5level","thread":"%thread","instanceIp":"${INSTANCE_IP}","traceId":"%X{trace-id}","requestIp":"%X{trace-ip}","class":"%logger{0}","method":"%method","message":%jm}%n'/>
     </Properties>
 
     <Appenders>
-        <!-- Console Appender -->
-        <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        <Console name="Console" target="SYSTEM_OUT">
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <Pattern>${CONSOLE_PATTERN_FORMAT}</Pattern>
+            </PatternLayout>
         </Console>
-
-        <!-- File Appender with Custom JSON Pattern -->
-        <!-- This pattern will be merged with TraceRoot required fields -->
-        <!-- User's custom fields: dateTime, thread, class, method, instanceIp, requestIp -->
-        <!-- Conflicting fields (level, message) will use TraceRoot values -->
-        <RollingFile name="FILE" fileName="logs/traceroot-sdk.log"
-                     filePattern="logs/traceroot-sdk.%d{yyyy-MM-dd}.%i.log">
-            <!-- Custom pattern with user-defined fields -->
-            <PatternLayout pattern='{"dateTime":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%-5level","thread":"%thread","instanceIp":"${INSTANCE_IP}","traceId":"%X{trace-id}","requestIp":"%X{trace-ip}","class":"%logger{0}","method":"%method","message":%jm}%n'/>
+        <RollingFile name="rollingFile" fileName="${FILE_NAME}"
+          filePattern="${LOG_HOME}/${LOG_NAME}.%d{yyyy-MM-dd}.log.%i">
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <Pattern>${JSON_PATTERN_FORMAT}</Pattern>
+            </PatternLayout>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100MB"/>
+                <SizeBasedTriggeringPolicy size="200MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="30">
-                <Delete basePath="logs" maxDepth="1">
-                    <IfFileName glob="traceroot-sdk.*.log"/>
-                    <IfLastModified age="30d"/>
-                </Delete>
-            </DefaultRolloverStrategy>
+            <DefaultRolloverStrategy max = "50" />
         </RollingFile>
     </Appenders>
 
     <Loggers>
-        <!-- Root logger configuration -->
-        <Root level="INFO">
-            <AppenderRef ref="CONSOLE"/>
-            <AppenderRef ref="FILE"/>
+        <!-- LOG everything at DEBUG level -->
+        <Root level="DEBUG">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="rollingFile"/>
         </Root>
 
         <!-- TraceRoot SDK specific logger -->
         <Logger name="ai.traceroot.sdk" level="WARN" additivity="false">
-            <AppenderRef ref="CONSOLE"/>
-            <AppenderRef ref="FILE"/>
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="rollingFile"/>
         </Logger>
 
         <!-- Reduce noise in logs -->

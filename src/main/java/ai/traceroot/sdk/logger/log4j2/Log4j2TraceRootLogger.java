@@ -59,26 +59,28 @@ public class Log4j2TraceRootLogger implements TraceRootLoggerInterface {
     }
   }
 
-  /** Wrap FILE appenders to add TraceRoot JSON format */
+  /** Wrap all RollingFileAppender instances to add TraceRoot JSON format */
   private static void wrapFileAppenders(LoggerContext context, TraceRootConfigImpl config) {
     try {
       // Get root logger
       org.apache.logging.log4j.core.Logger rootLogger =
           context.getLogger(LogManager.ROOT_LOGGER_NAME);
 
-      // Wrap FILE appenders to add TraceRoot JSON format
-      org.apache.logging.log4j.core.Appender fileAppender = rootLogger.getAppenders().get("FILE");
-      if (fileAppender != null && !(fileAppender instanceof Log4j2FileAppenderWrapper)) {
-        // Remove the original appender
-        rootLogger.removeAppender(fileAppender);
+      // Iterate through all appenders and wrap any RollingFileAppender instances
+      for (org.apache.logging.log4j.core.Appender appender : rootLogger.getAppenders().values()) {
+        if (appender instanceof org.apache.logging.log4j.core.appender.RollingFileAppender
+            && !(appender instanceof Log4j2FileAppenderWrapper)) {
+          // Remove the original appender
+          rootLogger.removeAppender(appender);
 
-        // Create wrapper with TraceRoot format
-        Log4j2FileAppenderWrapper wrapper = Log4j2FileAppenderWrapper.wrap(fileAppender);
-        wrapper.setConfig(config);
-        wrapper.start();
+          // Create wrapper with TraceRoot format
+          Log4j2FileAppenderWrapper wrapper = Log4j2FileAppenderWrapper.wrap(appender);
+          wrapper.setConfig(config);
+          wrapper.start();
 
-        // Add the wrapped appender
-        rootLogger.addAppender(wrapper);
+          // Add the wrapped appender
+          rootLogger.addAppender(wrapper);
+        }
       }
 
     } catch (Exception e) {
