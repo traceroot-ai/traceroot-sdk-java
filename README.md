@@ -1,3 +1,5 @@
+⚠️ THIS PROJECT IS DEPRECATED AND NO LONGER MAINTAINED.
+
 # TraceRoot Java SDK
 
 <div align="center">
